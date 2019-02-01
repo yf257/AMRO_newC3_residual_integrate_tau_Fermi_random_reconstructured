@@ -6,6 +6,10 @@ private:
 	int funcf2(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out, Ipp64f *functemp);
 	int funcf1(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out, Ipp64f *functemp);
 
+	int funcd(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out);
+	int funcfd2(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out, Ipp64f *functemp);
+	int funcfd1(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out, Ipp64f *functemp);
+
 	//int nPoints;
 	Ipp64f *subMaxR;
 	Ipp64f *temp1;

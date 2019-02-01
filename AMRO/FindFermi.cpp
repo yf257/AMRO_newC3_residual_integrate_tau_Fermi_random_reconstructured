@@ -86,6 +86,136 @@ int   FindFermi::funcf1(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky
 	ippsAddC_64f_I(params[2 - 1]* (35164.83516)/2, out, length);//eigenval[2]-0.5*(energy[kx,ky,kz,delta]-sqrt(4 * delta ^ 2 + () ^ 2)+energy[kx+Pi/a, ky+Pi/a, kz, delta])
 	return 0;
 }
+int FindFermi::funcd(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out) {
+
+	ippsMulC_64f(kx, 3.747665940, temp, length);
+
+	vdCos(length, temp, &temp[1 * length]); // cos cos
+	ippsMulC_64f(ky, 3.747665940, temp, length);
+
+	vdCos(length, temp, &temp[2 * length]); // cos sin
+	ippsMulC_64f(kx, 3.747665940 / 2, temp, length);
+
+	vdCos(length, temp, &temp[3 * length]); // cos cos/2
+	ippsMulC_64f(ky, 3.747665940 / 2, temp, length);
+
+	vdCos(length, temp, &temp[4 * length]); // cos sin/2
+	ippsMulC_64f(kx, 3.747665940 * 2, temp, length);
+
+	vdCos(length, temp, &temp[5 * length]); // cos 2 cos
+	ippsMulC_64f(ky, 3.747665940 * 2, temp, length);
+
+	vdCos(length, temp, &temp[6 * length]); // cos 2 sin
+	ippsMulC_64f(argkz, 0.5, &temp[8 * length], length); //kzc / 2
+	vdCos(length, &temp[8 * length], &temp[7 * length]); // cos kzc/2
+	vdCos(length, &temp[8 * length], &temp[9 * length]); // cos kzc ***made same as above, cos kzc/2
+
+	ippsAdd_64f(&temp[5 * length], &temp[6 * length], temp, length);// param 5
+	ippsMulC_64f(temp, -35164.83516*params[5 - 1], out, length);
+
+	ippsMul_64f(&temp[1 * length], &temp[2 * length], temp, length);// param 4
+	ippsMulC_64f_I(-35164.83516 * 2 * params[4 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+
+	ippsAdd_64f(&temp[1 * length], &temp[2 * length], temp, length);// param 3
+	ippsMulC_64f_I(-35164.83516 * params[3 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+	//ippsAddC_64f_I(35164.83516 / 2 * params[2 - 1], out, length);// param 2
+	ippsSub_64f(&temp[2 * length], &temp[1 * length], temp, length);// param 6
+	ippsSqr_64f_I(temp, length); //square
+	ippsMul_64f_I(&temp[3 * length], temp, length); // mult by cos cos/2
+	ippsMul_64f_I(&temp[4 * length], temp, length); // mult by cos sin/2
+	ippsMul_64f_I(&temp[7 * length], temp, length); // mult by cos  kz/2
+	ippsMulC_64f_I(-35164.83516 * 0, temp, length);
+	ippsMulC_64f_I(-35164.83516 * 0, &temp[9 * length], length);
+	ippsAdd_64f_I(temp, out, length);
+	ippsAdd_64f_I(&temp[9 * length], out, length);
+
+	return 0;
+}
+
+int   FindFermi::funcfd2(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out, Ipp64f *functemp) {
+	funcd(params, argkz, kx, ky, length, temp, functemp);// energy[kx,ky,kz,delta]
+														//cout << "fun(kx+Pi/2a,ky+Pi/2a,0,0.1)" << "  " << functemp[0] << endl;
+	ippsAddC_64f(kx, 3.1415926535 / 3.747665940, &functemp[1 * length], length);//kx+Pi/a
+	ippsAddC_64f(ky, 3.1415926535 / 3.747665940, &functemp[2 * length], length);// ky+Pi/a
+	funcd(params, argkz, &functemp[1 * length], &functemp[2 * length], length, temp, &functemp[3 * length]);// energy[kx+Pi/a, ky+Pi/a, kz, delta]
+																										   //cout << "kx " << functemp[1 * length] << "  ky " << functemp[2 * length] << endl;
+																										   //cout << "fun(kx+Pi/2a+Pi/a,ky+Pi/2a+Pi/a,0,0.1)" << "  " << functemp[3 * length] << endl;
+	ippsSub_64f(&functemp[3 * length], functemp, &functemp[4 * length], length); //energy[kx, ky, kz, delta] -energy[kx+Pi/a, ky+Pi/a, kz, delta]
+	ippsMul_64f_I(&functemp[4 * length], &functemp[4 * length], length);//square(energy[kx, ky, kz, delta] -energy[kx+Pi/a, ky+Pi/a, kz, delta])
+	ippsAddC_64f_I(params[10 - 1] * params[10 - 1] * (-35164.83516)*(-35164.83516), &functemp[4 * length], length);//4*delta^2+()^2
+	ippsSqrt_64f_I(&functemp[4 * length], length);//sqrt(4 * delta ^ 2 + () ^ 2)
+	ippsSub_64f(&functemp[4 * length], functemp, out, length);//energy[kx,ky,kz,delta]-sqrt(4 * delta ^ 2 + () ^ 2)
+	ippsAdd_64f_I(&functemp[3 * length], out, length);//energy[kx,ky,kz,delta]-sqrt(4 * delta ^ 2 + () ^ 2)+energy[kx+Pi/a, ky+Pi/a, kz, delta]
+	ippsMulC_64f_I(0.5, out, length);//0.5*
+
+	ippsMulC_64f(kx, 3.747665940, temp, length);
+	vdCos(length, temp, &temp[1 * length]); // cos cos
+	ippsMulC_64f(ky, 3.747665940, temp, length);
+	vdCos(length, temp, &temp[2 * length]); // cos sin
+	ippsMulC_64f(kx, 3.747665940 / 2, temp, length);
+	vdCos(length, temp, &temp[3 * length]); // cos cos/2
+	ippsMulC_64f(ky, 3.747665940 / 2, temp, length);
+	vdCos(length, temp, &temp[4 * length]); // cos sin/2
+	ippsSub_64f(&temp[2 * length], &temp[1 * length], temp, length);// param 6
+	ippsSqr_64f_I(temp, length); //square
+	ippsMul_64f_I(&temp[3 * length], temp, length); // mult by cos cos/2
+	ippsMul_64f_I(&temp[4 * length], temp, length); // mult by cos sin/2
+	ippsMulC_64f(argkz, 0.5, &temp[8 * length], length); //kzc / 2
+	vdCos(length, &temp[8 * length], &temp[7 * length]); // cos kzc/2
+	ippsMul_64f_I(&temp[7 * length], temp, length); // mult by cos  kz/2
+	ippsMulC_64f_I(-35164.83516 * params[6-1], temp, length);
+
+
+	ippsAddC_64f_I(params[2 - 1] * (35164.83516) / 2, out, length);//eigenval[2]-5*10^6
+	ippsAdd_64f_I(temp, out, length);
+
+
+	return 0;
+}
+int   FindFermi::funcfd1(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out, Ipp64f *functemp) {
+	funcd(params, argkz, kx, ky, length, temp, functemp);// energy[kx,ky,kz,delta]
+														//cout << "fun(kx+Pi/2a,ky+Pi/2a,0,0.1)" << "  " << functemp[0] << endl;
+	ippsAddC_64f(kx, 3.1415926535 / 3.747665940, &functemp[1 * length], length);//kx+Pi/a
+	ippsAddC_64f(ky, 3.1415926535 / 3.747665940, &functemp[2 * length], length);// ky+Pi/a
+	funcd(params, argkz, &functemp[1 * length], &functemp[2 * length], length, temp, &functemp[3 * length]);// energy[kx+Pi/a, ky+Pi/a, kz, delta]
+																										   //cout << "kx " << functemp[1 * length] << "  ky " << functemp[2 * length] << endl;
+																										   //cout << "fun(kx+Pi/2a+Pi/a,ky+Pi/2a+Pi/a,0,0.1)" << "  " << functemp[3 * length] << endl;
+	ippsSub_64f(&functemp[3 * length], functemp, &functemp[4 * length], length); //energy[kx, ky, kz, delta] -energy[kx+Pi/a, ky+Pi/a, kz, delta]
+	ippsMul_64f_I(&functemp[4 * length], &functemp[4 * length], length);//square(energy[kx, ky, kz, delta] -energy[kx+Pi/a, ky+Pi/a, kz, delta])
+	ippsAddC_64f_I(params[10 - 1] * params[10 - 1] * (-35164.83516)*(-35164.83516), &functemp[4 * length], length);//4*delta^2+()^2
+	ippsSqrt_64f_I(&functemp[4 * length], length);//sqrt(4 * delta ^ 2 + () ^ 2)
+	ippsAdd_64f(&functemp[4 * length], functemp, out, length);//energy[kx,ky,kz,delta]+sqrt(4 * delta ^ 2 + () ^ 2)
+	ippsAdd_64f_I(&functemp[3 * length], out, length);//energy[kx,ky,kz,delta]+sqrt(4 * delta ^ 2 + () ^ 2)+energy[kx+Pi/a, ky+Pi/a, kz, delta]
+	ippsMulC_64f_I(0.5, out, length);//0.5*
+
+	ippsMulC_64f(kx, 3.747665940, temp, length);
+	vdCos(length, temp, &temp[1 * length]); // cos cos
+	ippsMulC_64f(ky, 3.747665940, temp, length);
+	vdCos(length, temp, &temp[2 * length]); // cos sin
+	ippsMulC_64f(kx, 3.747665940 / 2, temp, length);
+	vdCos(length, temp, &temp[3 * length]); // cos cos/2
+	ippsMulC_64f(ky, 3.747665940 / 2, temp, length);
+	vdCos(length, temp, &temp[4 * length]); // cos sin/2
+	ippsSub_64f(&temp[2 * length], &temp[1 * length], temp, length);// param 6
+	ippsSqr_64f_I(temp, length); //square
+	ippsMul_64f_I(&temp[3 * length], temp, length); // mult by cos cos/2
+	ippsMul_64f_I(&temp[4 * length], temp, length); // mult by cos sin/2
+	ippsMulC_64f(argkz, 0.5, &temp[8 * length], length); //kzc / 2
+	vdCos(length, &temp[8 * length], &temp[7 * length]); // cos kzc/2
+	ippsMul_64f_I(&temp[7 * length], temp, length); // mult by cos  kz/2
+	ippsMulC_64f_I(-35164.83516 * params[6 - 1], temp, length);
+
+
+	ippsAddC_64f_I(params[2 - 1] * (35164.83516) / 2, out, length);//eigenval[2]-5*10^6
+	ippsAdd_64f_I(temp, out, length);
+
+
+
+	
+	return 0;
+}
 //int FindFermi::func(Ipp64f * params, Ipp64f * argkz, Ipp64f * argCos, Ipp64f * argSin, Ipp64f * r, int length, Ipp64f * temp, Ipp64f * out)
 /*
 int FindFermi::func(Ipp64f *params, Ipp64f * argkz, Ipp64f * argCos, Ipp64f * argSin, Ipp64f *r, int length, Ipp64f *temp, Ipp64f *out) {
@@ -222,10 +352,10 @@ FindFermi::FindFermi(Ipp64f * param)
 	//DataExtractor extractor(name);
 	//Ipp64f params[9] = { 0.074, 475, 525, -60, 16, 1000, 0.5, 17, 8 };
 	UpdatePar(param);
-	fineN = 500;//innitial grid inplane
+	fineN = 2000;//innitial grid inplane
 	NumLeng = 0;//number of contour 
 
-	cdevs = 16;//Kz grid
+	cdevs = 8;//Kz grid
 	//Ipp64f * starts = extractor.getDataArray();
 	//int nPoints = floor((extractor.getNumberOfLines()) / 2);
 	nPoints = 0;
@@ -259,6 +389,12 @@ FindFermi::FindFermi(Ipp64f * param)
 	tempx4 = new Ipp64f[nfinepoint];
 	tempy4 = new Ipp64f[nfinepoint];
 	tempz = new Ipp64f[nfinepoint];
+	Ipp64f kxrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
+	Ipp64f kyrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
+	Ipp64f kxrangeU = 0;//3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
+	Ipp64f kyrangeU = 0; //3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
+	
+
 	//Ipp64f *startpoint = new Ipp64f[3 * nPoints];
 	for (int i = 0; i < cdevs; i++)
 	{
@@ -266,15 +402,15 @@ FindFermi::FindFermi(Ipp64f * param)
 		{
 			for (int k = 0; k < fineN; k++)
 			{
-				tempx1[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * j;
-				tempy1[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * k;
-				tempx2[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * (j + 1);
-				tempy2[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * (k);
-				tempx3[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * j;
-				tempy3[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * (k + 1);
-				tempx4[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * (j + 1);
-				tempy4[i*fineN*fineN + k * fineN + j] = -3.1415926 / 3.747665940 + 2 * 3.1415926 / 3.747665940 / fineN * (k + 1);
-				tempz[i*fineN*fineN + k * fineN + j] = -2 * 3.1415926 / 13.2 + 4 * 3.1415926 / 13.2 / cdevs / 2 + 4 * 3.1415926 / 13.2 / cdevs * i;
+				tempx1[i*fineN*fineN + k * fineN + j] = -kxrangeD +  (kxrangeU - kxrangeD) / fineN * j;
+				tempy1[i*fineN*fineN + k * fineN + j] = -kyrangeD +  (kyrangeU - kyrangeD) / fineN * k;
+				tempx2[i*fineN*fineN + k * fineN + j] = -kxrangeD +  (kxrangeU - kxrangeD) / fineN * (j + 1);
+				tempy2[i*fineN*fineN + k * fineN + j] = -kyrangeD +  (kyrangeU - kyrangeD) / fineN * (k);
+				tempx3[i*fineN*fineN + k * fineN + j] = -kxrangeD +  (kxrangeU - kxrangeD) / fineN * j;
+				tempy3[i*fineN*fineN + k * fineN + j] = -kyrangeD +  (kyrangeU - kyrangeD) / fineN * (k + 1);
+				tempx4[i*fineN*fineN + k * fineN + j] = -kxrangeD +  (kxrangeU - kxrangeD) / fineN * (j + 1);
+				tempy4[i*fineN*fineN + k * fineN + j] = -kyrangeD +  (kyrangeU - kyrangeD) / fineN * (k + 1);
+				tempz[i*fineN*fineN + k * fineN + j] =  -2 * 3.1415926 / 13.2  + 4 * 3.1415926 / 13.2 / cdevs / 2 + 4 * 3.1415926 / 13.2 / cdevs * i;
 			}
 			/*cout << starts[2 * i] << " " << starts[2 * i + 1] << endl;*/
 
@@ -290,10 +426,10 @@ FindFermi::FindFermi(Ipp64f * param)
 		cout << params[i] << ", ";
 	}
 	cout << endl;
-	funcf2(params, argkz, tempx1, tempy1, nfinepoint, temp1, tfunc,temp2);
-	funcf2(params, argkz, tempx2, tempy2, nfinepoint, temp1, tfunc1, temp2);
-	funcf2(params, argkz, tempx3, tempy3, nfinepoint, temp1, tfunc2, temp2);
-	funcf2(params, argkz, tempx4, tempy4, nfinepoint, temp1, tfunc3, temp2);
+	funcfd2(params, argkz, tempx1, tempy1, nfinepoint, temp1, tfunc,temp2);
+	funcfd2(params, argkz, tempx2, tempy2, nfinepoint, temp1, tfunc1, temp2);
+	funcfd2(params, argkz, tempx3, tempy3, nfinepoint, temp1, tfunc2, temp2);
+	funcfd2(params, argkz, tempx4, tempy4, nfinepoint, temp1, tfunc3, temp2);
 	
 	/*
 	funcf1(params, argkz, tempx1, tempy1, nfinepoint, temp1, tfunc, temp2);
@@ -484,18 +620,6 @@ int FindFermi::ReturnStart(Ipp64f * startpoint)
 
 	fout.close();
 	//while (true);
-	return 0;
-}
-
-int FindFermi::ReturnNumPoint()
-{
-	cout << "nPoints = " << &nPoints << "  " << nPoints << endl;
-	return nPoints;
-}
-
-
-FindFermi::~FindFermi()
-{
 	delete subMaxR;
 	delete temp1;
 	delete temp2;
@@ -520,5 +644,42 @@ FindFermi::~FindFermi()
 	delete lengArr;
 	delete kx;
 	delete ky;
+	
+	return 0;
+}
 
+int FindFermi::ReturnNumPoint()
+{
+	cout << "nPoints = " << &nPoints << "  " << nPoints << endl;
+	return nPoints;
+}
+
+
+FindFermi::~FindFermi()
+{/*
+	delete subMaxR;
+	delete temp1;
+	delete temp2;
+	delete argCos;
+	delete argSin;
+	delete argkz;
+	delete kz;
+	delete funcval;
+	delete tfunc1;
+	delete tfunc2;
+	delete tfunc;
+	delete tfunc3;
+	delete tempx1;
+	delete tempy1;
+	delete tempx2;
+	delete tempy2;
+	delete tempx3;
+	delete tempy3;
+	delete tempx4;
+	delete tempy4;
+	delete tempz;
+	delete lengArr;
+	delete kx;
+	delete ky;
+	*/
 }

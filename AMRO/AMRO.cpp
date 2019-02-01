@@ -16,6 +16,16 @@ int veloZ(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f
 
 int func(Ipp64f *params, Ipp64f * kz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out);
 
+int veloXsubD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out);//derivative of e[kx,ky,kz]
+int veloYsubD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out);
+int veloZsubD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out);
+
+int veloXD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *tempvel, Ipp64f *out);//derivative of eigen[{e[kx,ky,kz],delta},{delta,e[kx+Pi/a,ky+Pi/a,kz]}]
+int veloYD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *tempvel, Ipp64f *out);
+int veloZD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *tempvel, Ipp64f *out);
+
+int funcD(Ipp64f *params, Ipp64f * kz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out);
+
 int fx(Ipp64f * field, Ipp64f *vy, Ipp64f *vz, int length, Ipp64f *temp, Ipp64f *out);
 int fy(Ipp64f * field, Ipp64f *vx, Ipp64f *vz, int length, Ipp64f *temp, Ipp64f *out);
 int fz(Ipp64f * field, Ipp64f *vx, Ipp64f *vy, int length, Ipp64f *temp, Ipp64f *out);
@@ -29,7 +39,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	startT = std::clock();
 	//Ipp64f thetas[numthetas] = {0,3.1415926 };
 	//const int numthetas = 1;
-	//Ipp64f thetas[1] = { 1.5708 };
+	//Ipp64f thetas[1] = { 1.48353 };
 
 	
 	const int numthetas = 21;
@@ -48,7 +58,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	DataExtractor extractdat("data.dat");
 	params = extractor.getDataArray();
 	Ipp64f final = 8 * params[1 - 1];
-	long steps = 800;//number of time steps?
+	long steps = 1000;//number of time steps?
 	Ipp64f h = final / steps;
 	FindFermi Fermi( params);
 	int nPoints = Fermi.nPoints;
@@ -59,7 +69,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	Ipp64f *starts = new Ipp64f[nPoints * 3];
 	Fermi.ReturnStart(starts);
-
+	
 	Ipp64f *output = new Ipp64f[nPoints*steps * 4]; //stores evolution of orbit around Fermi surface
 	Ipp64f *times = new Ipp64f[steps * nPoints]; //time steps
 
@@ -116,13 +126,20 @@ int _tmain(int argc, _TCHAR* argv[])
 		output[1 * nPoints + j] = starts[j * 3 + 1];
 		output[2 * nPoints + j] = starts[j * 3 + 2];
 	}
-
+	
 	ippsCopy_64f(&output[nPoints * (0)], argx, nPoints);//initial velocities for DOS calc;
 	ippsCopy_64f(&output[nPoints * (1)], argy, nPoints);
 	ippsCopy_64f(&output[nPoints * (2)], argz, nPoints);
+	/*
 	veloX(params, argx, argy, argz, nPoints, tempx,  tempfunc, vx); //velocities for DOS are stored in vx, vy, and vz buffers.
 	veloY(params, argx, argy, argz, nPoints, tempy,  tempfunc, vy);
 	veloZ(params, argx, argy, argz, nPoints, tempz,  tempfunc, vz);
+	*/
+
+	veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //velocities for DOS are stored in vx, vy, and vz buffers.
+	veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+	veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+
 
 	ippsSqr_64f_I(vx, nPoints);//in-place square of velocities
 	ippsSqr_64f_I(vy, nPoints);
@@ -161,9 +178,17 @@ int _tmain(int argc, _TCHAR* argv[])
 			ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 0)], argx, nPoints);//copy arguments for k1;
 			ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
 			ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+			/*
 			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
 			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
 			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			*/
+
+			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+
+
 			ippsCopy_64f(vz, &vzStorage[nPoints * (i - 1)], nPoints);//store vz for conductivity later
 
 			taufun(params, *minDos, *maxDos, argx, argy, argz, nPoints, tempx, taus, ones);// calculate k dependent tau
@@ -195,9 +220,15 @@ int _tmain(int argc, _TCHAR* argv[])
 			ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k2;
 			ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
 			ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+			/*
 			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
 			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
 			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			*/
+			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			
 			fx(field, vy, vz, nPoints, tempx, k2x); //calculate evolution in k and store in k2
 			fy(field, vx, vz, nPoints, tempy, k2y);
 			fz(field, vx, vy, nPoints, tempz, k2z);
@@ -208,9 +239,15 @@ int _tmain(int argc, _TCHAR* argv[])
 			ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k3;
 			ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
 			ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+			/*
 			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
 			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
 			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			*/
+			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			
 			fx(field, vy, vz, nPoints, tempx, k3x); //calculate evolution in k and store in k3
 			fy(field, vx, vz, nPoints, tempy, k3y);
 			fz(field, vx, vy, nPoints, tempz, k3z);
@@ -221,9 +258,15 @@ int _tmain(int argc, _TCHAR* argv[])
 			ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k4;
 			ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
 			ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+			/*
 			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
 			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
 			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			*/
+			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			
 			fx(field, vy, vz, nPoints, tempx, k4x); //calculate evolution in k and store in k4
 			fy(field, vx, vz, nPoints, tempy, k4y);
 			fz(field, vx, vy, nPoints, tempz, k4z);
@@ -260,7 +303,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 0)], argx, nPoints);//get velocity for last point
 		ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 1)], argy, nPoints);
 		ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 2)], argz, nPoints);
-		veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+		
+		//veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+		veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
 		ippsCopy_64f(vz, &vzStorage[nPoints * (steps - 1)], nPoints);
 
 		taufun(params, *minDos, *maxDos, argx, argy, argz, nPoints, tempx, taus, ones);// calculate k dependent tau for last point
@@ -627,29 +672,285 @@ int veloZ(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f
 	ippsMulC_64f(tempvel, 0.5, out, length);//0.5*()
 	return 0;
 }
-//int veloX(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out) {
-//	/*return 5710 * sin(3.74767*kx);*/
-//	ippsMulC_64f(kx, 3.74767, temp, length);
-//	vdSin(length, temp, out);
-//	ippsMulC_64f_I(5710, out, length);
-//	return 0;
-//}
-//
-//int veloY(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out) {
-//	/*return 5710 * sin(3.74767*ky);*/
-//	ippsMulC_64f(ky, 3.74767, temp, length);
-//	vdSin(length, temp, out);
-//	ippsMulC_64f_I(5710, out, length);
-//	return 0;
-//}
-//
-//int veloZ(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out) {
-//	/*return  .10 * sin(3.3*kz);*/
-//	ippsMulC_64f(kz, 3.3, temp, length);
-//	vdSin(length, temp, out);
-//	ippsMulC_64f_I(0.1, out, length);
-//	return 0;
-//}
+
+
+int funcD(Ipp64f *params, Ipp64f * kz, Ipp64f * kx, Ipp64f * ky, int length, Ipp64f *temp, Ipp64f *out) {
+
+	ippsMulC_64f(kx, 3.747665940, temp, length);
+
+	vdCos(length, temp, &temp[1 * length]); // cos cos
+	ippsMulC_64f(ky, 3.747665940, temp, length);
+
+	vdCos(length, temp, &temp[2 * length]); // cos sin
+	ippsMulC_64f(kx, 3.747665940 / 2, temp, length);
+
+	vdCos(length, temp, &temp[3 * length]); // cos cos/2
+	ippsMulC_64f(ky, 3.747665940 / 2, temp, length);
+
+	vdCos(length, temp, &temp[4 * length]); // cos sin/2
+	ippsMulC_64f(kx, 3.747665940 * 2, temp, length);
+
+	vdCos(length, temp, &temp[5 * length]); // cos 2 cos
+	ippsMulC_64f(ky, 3.747665940 * 2, temp, length);
+
+	vdCos(length, temp, &temp[6 * length]); // cos 2 sin
+	ippsMulC_64f(kz, 0.5*13.2, &temp[8 * length], length); //kzc / 2
+	vdCos(length, &temp[8 * length], &temp[7 * length]); // cos kzc/2
+	vdCos(length, &temp[8 * length], &temp[9 * length]); // cos kzc ***made same as above, cos kzc/2
+
+	ippsAdd_64f(&temp[5 * length], &temp[6 * length], temp, length);// param 5
+	ippsMulC_64f(temp, -35164.83516*params[5 - 1], out, length);
+
+	ippsMul_64f(&temp[1 * length], &temp[2 * length], temp, length);// param 4
+	ippsMulC_64f_I(-35164.83516 * 2 * params[4 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+
+	ippsAdd_64f(&temp[1 * length], &temp[2 * length], temp, length);// param 3
+	ippsMulC_64f_I(-35164.83516 * params[3 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+	//ippsAddC_64f_I(35164.83516 / 2 * params[2 - 1], out, length);// param 2
+	ippsSub_64f(&temp[2 * length], &temp[1 * length], temp, length);// param 6
+	ippsSqr_64f_I(temp, length); //square
+	ippsMul_64f_I(&temp[3 * length], temp, length); // mult by cos cos/2
+	ippsMul_64f_I(&temp[4 * length], temp, length); // mult by cos sin/2
+	ippsMul_64f_I(&temp[7 * length], temp, length); // mult by cos  kz/2
+	ippsMulC_64f_I(-35164.83516 * 0, temp, length);
+	ippsMulC_64f_I(-35164.83516 * 0, &temp[9 * length], length);
+	ippsAdd_64f_I(temp, out, length);
+	ippsAdd_64f_I(&temp[9 * length], out, length);
+
+	return 0;
+}
+
+int veloXsubD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out)
+{
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for sin(kx), param3
+	vdSin(length, temp, &temp[1 * length]);
+	ippsMulC_64f(&temp[1 * length], params[3 - 1] * 11.4215, out, length);
+
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for sin(kx)cos(ky), param4
+	vdSin(length, temp, &temp[1 * length]);
+	ippsMulC_64f(ky, 3.74767, temp, length);
+	vdCos(length, temp, &temp[2 * length]);
+	ippsMul_64f_I(&temp[1 * length], &temp[2 * length], length);
+	ippsMulC_64f(&temp[2 * length], 22.8429*params[4 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+
+	ippsMulC_64f(kx, 2 * 3.74767, temp, length); //term for sin(2 kx), param5
+	vdSin(length, temp, &temp[1 * length]);
+	ippsMulC_64f(&temp[1 * length], params[5 - 1] * 11.4215 * 2, temp, length);
+	ippsAdd_64f_I(temp, out, length);
+
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for long complicated kz term, param6
+	vdSin(length, temp, &temp[1 * length]); // sin kx
+	vdCos(length, temp, &temp[2 * length]); // cos kx
+	ippsMulC_64f(ky, 3.74767, temp, length);
+	vdSin(length, temp, &temp[3 * length]); // sin ky
+	vdCos(length, temp, &temp[4 * length]); // cos ky
+	ippsMulC_64f(kx, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[5 * length]); // sin kx/2
+	vdCos(length, temp, &temp[6 * length]); // cos kx/2
+	ippsMulC_64f(ky, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[7 * length]); // sin ky/2
+	vdCos(length, temp, &temp[8 * length]); // cos ky/2
+	ippsMulC_64f(kz, 6.6, temp, length);//kz*c/2(c=13.2)
+	vdCos(length, temp, &temp[9 * length]); // cos kz/2
+	ippsMul_64f(&temp[6 * length], &temp[1 * length], &temp[10 * length], length);//cos kx/2 * sin kx
+	ippsMulC_64f_I(65893 * 4, &temp[10 * length], length); // mult by constant
+	ippsSub_64f(&temp[4 * length], &temp[2 * length], &temp[11 * length], length);//cos kx - cos ky
+	ippsMulC_64f(&temp[11 * length], 65893, &temp[12 * length], length);//mult by constant
+	ippsMul_64f(&temp[5 * length], &temp[12 * length], &temp[13 * length], length);// mult by sin kx/2
+	ippsAdd_64f(&temp[13 * length], &temp[10 * length], temp, length);//add those two together
+	ippsMul_64f_I(&temp[9 * length], temp, length);//mult by cos kz/2
+	ippsMul_64f_I(&temp[11 * length], temp, length);//mult by cos kx - cos ky
+	ippsMul_64f_I(&temp[8 * length], temp, length);//mult by cos ky/2
+	ippsMulC_64f_I(params[6 - 1] * 0.0000866667*0, temp, length);
+	//ippsMulC_64f_I(params[6 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+
+	return 0;
+}
+
+
+int veloYsubD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out) {
+	ippsMulC_64f(ky, 3.74767, temp, length); //term for sin(ky), param3
+	vdSin(length, temp, &temp[1 * length]);
+	ippsMulC_64f(&temp[1 * length], params[3 - 1] * 11.4215, out, length);
+
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for cos(kx)sin(ky), param4
+	vdCos(length, temp, &temp[1 * length]);
+	ippsMulC_64f(ky, 3.74767, temp, length);
+	vdSin(length, temp, &temp[2 * length]);
+	ippsMul_64f_I(&temp[1 * length], &temp[2 * length], length);
+	ippsMulC_64f(&temp[2 * length], 22.8429*params[4 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+
+	ippsMulC_64f(ky, 2 * 3.74767, temp, length); //term for sin(2 ky), param5
+	vdSin(length, temp, &temp[1 * length]);
+	ippsMulC_64f(&temp[1 * length], params[5 - 1] * 11.4215 * 2, temp, length);
+	ippsAdd_64f_I(temp, out, length);
+
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for long complicated kz term, param6
+	vdSin(length, temp, &temp[1 * length]); // sin kx
+	vdCos(length, temp, &temp[2 * length]); // cos kx
+	ippsMulC_64f(ky, 3.74767, temp, length);
+	vdSin(length, temp, &temp[3 * length]); // sin ky
+	vdCos(length, temp, &temp[4 * length]); // cos ky
+	ippsMulC_64f(kx, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[5 * length]); // sin kx/2
+	vdCos(length, temp, &temp[6 * length]); // cos kx/2
+	ippsMulC_64f(ky, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[7 * length]); // sin ky/2
+	vdCos(length, temp, &temp[8 * length]); // cos ky/2
+	ippsMulC_64f(kz, 6.6, temp, length);//kz*c/2(c=13.2)
+	vdCos(length, temp, &temp[9 * length]); // cos kz/2
+	ippsMul_64f(&temp[8 * length], &temp[3 * length], &temp[10 * length], length);//cos ky/2 * sin ky
+	ippsMulC_64f_I(65893 * 4, &temp[10 * length], length); // mult by constant
+	ippsSub_64f(&temp[4 * length], &temp[2 * length], &temp[11 * length], length);//cos kx - cos ky CHECK SIGN
+	ippsMulC_64f(&temp[11 * length], 65893, &temp[12 * length], length);//mult by constant
+	ippsMul_64f(&temp[7 * length], &temp[12 * length], &temp[13 * length], length);// mult by sin kx/2
+	ippsSub_64f(&temp[10 * length], &temp[13 * length], temp, length);//add those two together (neg sign)	
+	ippsMul_64f_I(&temp[9 * length], temp, length);//mult by cos kz/2
+	ippsMul_64f_I(&temp[11 * length], temp, length);//mult by cos kx - cos ky
+	ippsMul_64f_I(&temp[6 * length], temp, length);//mult by cos kx/2	
+	ippsMulC_64f_I(params[6 - 1] * 0.0000866667*0, temp, length);
+	//ippsMulC_64f_I(params[6 - 1], temp, length);
+	ippsAdd_64f_I(temp, out, length);
+	return 0;
+
+
+}
+
+int veloZsubD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f *out) {
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for long complicated kz term, param6
+	vdCos(length, temp, &temp[2 * length]); // cos kx
+	ippsMulC_64f(ky, 3.74767, temp, length);
+	vdCos(length, temp, &temp[4 * length]); // cos ky
+	ippsMulC_64f(kx, 3.74767 / 2, temp, length);
+	vdCos(length, temp, &temp[6 * length]); // cos kx/2
+	ippsMulC_64f(ky, 3.74767 / 2, temp, length);
+	vdCos(length, temp, &temp[8 * length]); // cos ky/2
+	ippsMulC_64f(kz, 6.6, temp, length);
+	vdSin(length, temp, &temp[9 * length]); // sin kzc/2
+	ippsMulC_64f(kz, 6.6, temp, length); // changed to kz c/2
+	vdSin(length, temp, &temp[13 * length]);// sin kzc **fixed to kz c/2
+
+	ippsSub_64f(&temp[4 * length], &temp[2 * length], &temp[11 * length], length);//cos kx - cos ky
+	ippsSqr_64f_I(&temp[11 * length], length);//square it
+	ippsMul_64f_I(&temp[9 * length], &temp[11 * length], length);// times sin kz/2
+	ippsMul_64f_I(&temp[8 * length], &temp[11 * length], length);// times cos ky/2
+	ippsMul_64f_I(&temp[6 * length], &temp[11 * length], length);// times cos ky/2
+	ippsMulC_64f(&temp[11 * length], params[6 - 1] * 10.0571 * 2, out, length);
+	ippsMulC_64f(&temp[13 * length], params[7 - 1] * 10.0571 * 2, &temp[12 * length], length);//h7 term ***removed factor of two when switching to cos kz from cos kz/2
+	ippsAdd_64f_I(&temp[12 * length], out, length);
+
+
+	return 0;
+
+
+}
+
+int veloXD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f* tempvel, Ipp64f *out) {
+	veloXsubD(params, kx, ky, kz, length, temp, tempvel);// (9.1*10^-31) 10^-20/(10^-12)*1/\[HBar]*D[e(kx,ky,kz),kx]
+	funcD(params, kz, kx, ky, length, temp, &tempvel[1 * length]);//e(kx,ky,kz)
+	ippsAddC_64f(kx, 3.1415926535 / 3.747665940, &tempvel[2 * length], length);//kx+Pi/a
+	ippsAddC_64f(ky, 3.1415926535 / 3.747665940, &tempvel[3 * length], length);// ky+Pi/b
+	veloXsubD(params, &tempvel[2 * length], &tempvel[3 * length], kz, length, temp, &tempvel[4 * length]); //(9.1*10^-31) 10^-20/(10^-12)*1/\[HBar]*D[e(kx+Pi/a, ky+Pi/b, kz), kx]
+	funcD(params, kz, &tempvel[2 * length], &tempvel[3 * length], length, temp, &tempvel[5 * length]);//e(kx+Pi/a,ky+Pi/b,kz)
+	ippsSub_64f(&tempvel[1 * length], &tempvel[5 * length], &tempvel[6 * length], length);//(e(kx+Pi/a,ky+Pi/b,kz)-e(kx,ky,kz))
+	ippsSub_64f(tempvel, &tempvel[4 * length], &tempvel[7 * length], length);//(D[e(kx+Pi/2a, ky+Pi/2b, kz), kx]- D[e(kx,ky,kz),kx])
+	ippsMul_64f(&tempvel[6 * length], &tempvel[6 * length], &tempvel[8 * length], length);//(e(kx+Pi/a,ky+Pi/b,kz)-e(kx,ky,kz))^2
+	ippsAddC_64f_I(params[10 - 1] * params[10 - 1] * (-35164.83516)*(-35164.83516), &tempvel[8 * length], length);//4*delta^2+(e-ePi)^2
+	ippsSqrt_64f_I(&tempvel[8 * length], length);//Sqrt(4*delta^2+(e-ePi)^2)
+	ippsMul_64f(&tempvel[6 * length], &tempvel[7 * length], &tempvel[9 * length], length);//(e(kx+Pi/2a,ky+Pi/2b,kz)-e(kx,ky,kz))*(D[e(kx+Pi/2a, ky+Pi/2b, kz), kx]- D[e(kx,ky,kz),kx])
+	ippsDiv_64f_I(&tempvel[8 * length], &tempvel[9 * length], length);//(-)(-)/sqrt()
+	//ippsAdd_64f_I(tempvel,&tempvel[9 * length],length);
+	ippsSub_64f_I(&tempvel[9 * length], tempvel, length);// D[e(kx, ky, kz), kx]- (-)(-) / sqrt()**********(Sub -> func2)(Add->func1)
+	ippsAdd_64f_I(&tempvel[4 * length], tempvel, length); //D[e(kx, ky, kz), kx] - (-)(-) / sqrt()+/D[e(kx+Pi/2a, ky+Pi/2b, kz), kx]
+	ippsMulC_64f(tempvel, 0.5, out, length);//0.5*()
+
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for long complicated kz term, param6
+	vdSin(length, temp, &temp[1 * length]); // sin kx
+	vdCos(length, temp, &temp[2 * length]); // cos kx
+	ippsMulC_64f(ky, 3.74767, temp, length);
+	vdSin(length, temp, &temp[3 * length]); // sin ky
+	vdCos(length, temp, &temp[4 * length]); // cos ky
+	ippsMulC_64f(kx, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[5 * length]); // sin kx/2
+	vdCos(length, temp, &temp[6 * length]); // cos kx/2
+	ippsMulC_64f(ky, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[7 * length]); // sin ky/2
+	vdCos(length, temp, &temp[8 * length]); // cos ky/2
+	ippsMulC_64f(kz, 6.6, temp, length);//kz*c/2(c=13.2)
+	vdCos(length, temp, &temp[9 * length]); // cos kz/2
+	ippsMul_64f(&temp[6 * length], &temp[1 * length], &temp[10 * length], length);//cos kx/2 * sin kx
+	ippsMulC_64f_I(65893 * 4, &temp[10 * length], length); // mult by constant
+	ippsSub_64f(&temp[4 * length], &temp[2 * length], &temp[11 * length], length);//cos kx - cos ky
+	ippsMulC_64f(&temp[11 * length], 65893, &temp[12 * length], length);//mult by constant
+	ippsMul_64f(&temp[5 * length], &temp[12 * length], &temp[13 * length], length);// mult by sin kx/2
+	ippsAdd_64f(&temp[13 * length], &temp[10 * length], temp, length);//add those two together
+	ippsMul_64f_I(&temp[9 * length], temp, length);//mult by cos kz/2
+	ippsMul_64f_I(&temp[11 * length], temp, length);//mult by cos kx - cos ky
+	ippsMul_64f_I(&temp[8 * length], temp, length);//mult by cos ky/2
+	ippsMulC_64f_I(params[6 - 1] * 0.0000866667 , temp, length);
+
+	ippsAdd_64f_I(temp,out,length);
+
+	return 0;
+}
+int veloYD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f* tempvel, Ipp64f *out) {
+	veloYsubD(params, kx, ky, kz, length, temp, tempvel);// D[e(kx,ky,kz),ky]
+	funcD(params, kz, kx, ky, length, temp, &tempvel[1 * length]);//e(kx,ky,kz)
+	ippsAddC_64f(kx, 3.1415926535 / 3.747665940, &tempvel[2 * length], length);//kx+Pi/a
+	ippsAddC_64f(ky, 3.1415926535 / 3.747665940, &tempvel[3 * length], length);// ky+Pi/b
+	veloYsubD(params, &tempvel[2 * length], &tempvel[3 * length], kz, length, temp, &tempvel[4 * length]); //D[e(kx+Pi/2a, ky+Pi/2b, kz), ky]
+	funcD(params, kz, &tempvel[2 * length], &tempvel[3 * length], length, temp, &tempvel[5 * length]);//e(kx+Pi/2a,ky+Pi/2b,kz)
+	ippsSub_64f(&tempvel[1 * length], &tempvel[5 * length], &tempvel[6 * length], length);//(e(kx+Pi/2a,ky+Pi/2b,kz)-e(kx,ky,kz))
+	ippsSub_64f(tempvel, &tempvel[4 * length], &tempvel[7 * length], length);//(D[e(kx+Pi/2a, ky+Pi/2b, kz), ky]- D[e(kx,ky,kz),ky])
+	ippsMul_64f(&tempvel[6 * length], &tempvel[6 * length], &tempvel[8 * length], length);//(e(kx+Pi/2a,ky+Pi/2b,kz)-e(kx,ky,kz))^2
+	ippsAddC_64f_I(params[10 - 1] * params[10 - 1] * (-35164.83516)*(-35164.83516), &tempvel[8 * length], length);//4*delta^2+(e-ePi)^2
+	ippsSqrt_64f_I(&tempvel[8 * length], length);//Sqrt(4*delta^2+(e-ePi)^2)
+	ippsMul_64f(&tempvel[6 * length], &tempvel[7 * length], &tempvel[9 * length], length);//(e(kx+Pi/2a,ky+Pi/2b,kz)-e(kx,ky,kz))*(D[e(kx+Pi/2a, ky+Pi/2b, kz), ky]- D[e(kx,ky,kz),ky])
+	ippsDiv_64f_I(&tempvel[8 * length], &tempvel[9 * length], length);//(-)(-)/sqrt()
+	ippsSub_64f_I(&tempvel[9 * length], tempvel, length);// D[e(kx, ky, kz), ky]- (-)(-) / sqrt()**********(Sub -> func2)(Add->func1)
+	ippsAdd_64f_I(&tempvel[4 * length], tempvel, length); //D[e(kx, ky, kz), ky] - (-)(-) / sqrt()+/D[e(kx+Pi/2a, ky+Pi/2b, kz), ky]
+	ippsMulC_64f(tempvel, 0.5, out, length);//0.5*()
+
+	ippsMulC_64f(kx, 3.74767, temp, length); //term for long complicated kz term, param6
+	vdSin(length, temp, &temp[1 * length]); // sin kx
+	vdCos(length, temp, &temp[2 * length]); // cos kx
+	ippsMulC_64f(ky, 3.74767, temp, length);
+	vdSin(length, temp, &temp[3 * length]); // sin ky
+	vdCos(length, temp, &temp[4 * length]); // cos ky
+	ippsMulC_64f(kx, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[5 * length]); // sin kx/2
+	vdCos(length, temp, &temp[6 * length]); // cos kx/2
+	ippsMulC_64f(ky, 3.74767 / 2, temp, length);
+	vdSin(length, temp, &temp[7 * length]); // sin ky/2
+	vdCos(length, temp, &temp[8 * length]); // cos ky/2
+	ippsMulC_64f(kz, 6.6, temp, length);//kz*c/2(c=13.2)
+	vdCos(length, temp, &temp[9 * length]); // cos kz/2
+	ippsMul_64f(&temp[8 * length], &temp[3 * length], &temp[10 * length], length);//cos ky/2 * sin ky
+	ippsMulC_64f_I(65893 * 4, &temp[10 * length], length); // mult by constant
+	ippsSub_64f(&temp[4 * length], &temp[2 * length], &temp[11 * length], length);//cos kx - cos ky CHECK SIGN
+	ippsMulC_64f(&temp[11 * length], 65893, &temp[12 * length], length);//mult by constant
+	ippsMul_64f(&temp[7 * length], &temp[12 * length], &temp[13 * length], length);// mult by sin kx/2
+	ippsSub_64f(&temp[10 * length], &temp[13 * length], temp, length);//add those two together (neg sign)	
+	ippsMul_64f_I(&temp[9 * length], temp, length);//mult by cos kz/2
+	ippsMul_64f_I(&temp[11 * length], temp, length);//mult by cos kx - cos ky
+	ippsMul_64f_I(&temp[6 * length], temp, length);//mult by cos kx/2	
+	ippsMulC_64f_I(params[6 - 1] * 0.0000866667 , temp, length);
+
+	ippsAdd_64f_I(temp, out, length);
+
+
+	return 0;
+}
+int veloZD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64f *temp, Ipp64f* tempvel, Ipp64f *out) {
+	veloZsubD(params, kx, ky, kz, length, temp, out);// D[e(kx,ky,kz),ky]
+	
+	return 0;
+}
 
 int fx(Ipp64f * field, Ipp64f *vy, Ipp64f *vz, int length, Ipp64f *temp, Ipp64f *out) {
 	/*return -1 / (11538.5) * (vy * field[2] - vz*field[1]);*/
