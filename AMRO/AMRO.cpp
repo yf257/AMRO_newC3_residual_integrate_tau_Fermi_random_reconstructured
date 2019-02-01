@@ -38,12 +38,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::clock_t startT;
 	startT = std::clock();
 	//Ipp64f thetas[numthetas] = {0,3.1415926 };
-	//const int numthetas = 1;
-	//Ipp64f thetas[1] = { 1.48353 };
+	const int numthetas = 1;
+	Ipp64f thetas[1] = { 1.48353 };
 
 	
-	const int numthetas = 21;
-	Ipp64f thetas[numthetas] = { 0., 0.0872665, 0.174533, 0.261799, 0.349066, 0.436332, 0.523599, \
+	//const int numthetas = 21;
+	//Ipp64f thetas[numthetas] = { 0., 0.0872665, 0.174533, 0.261799, 0.349066, 0.436332, 0.523599, \
 0.610865, 0.698132, 0.785398, 0.872665, 0.959931, 1.0472, 1.13446, \
 1.22173, 1.309, 1.39626, 1.48353, 1.5708, 1.65806, 1.74533 };
 	Ipp64f *condout = new Ipp64f[numthetas];
@@ -58,7 +58,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	DataExtractor extractdat("data.dat");
 	params = extractor.getDataArray();
 	Ipp64f final = 8 * params[1 - 1];
-	long steps = 1000;//number of time steps?
+	long steps = 800;//number of time steps?
 	Ipp64f h = final / steps;
 	FindFermi Fermi( params);
 	int nPoints = Fermi.nPoints;
@@ -399,7 +399,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//fout.open("Fermitraject.dat");
 	//fout.precision(15);
 	//cout << nPoints << endl;
-	/*
+	
 	for (int j = 0; j < nPoints; ++j) {
 		fout.open("Fermitraject"+std::to_string(j)+".dat");
 		fout.precision(15);
@@ -410,7 +410,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		fout.close();
 	}
-	*/
+	
 	//for (int i = 0; i < steps; ++i) {
 	//	cout << times[i] << " " << endl;
 	//}
@@ -865,7 +865,7 @@ int veloXD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64
 	ippsMul_64f(&tempvel[6 * length], &tempvel[7 * length], &tempvel[9 * length], length);//(e(kx+Pi/2a,ky+Pi/2b,kz)-e(kx,ky,kz))*(D[e(kx+Pi/2a, ky+Pi/2b, kz), kx]- D[e(kx,ky,kz),kx])
 	ippsDiv_64f_I(&tempvel[8 * length], &tempvel[9 * length], length);//(-)(-)/sqrt()
 	//ippsAdd_64f_I(tempvel,&tempvel[9 * length],length);
-	ippsSub_64f_I(&tempvel[9 * length], tempvel, length);// D[e(kx, ky, kz), kx]- (-)(-) / sqrt()**********(Sub -> func2)(Add->func1)
+	ippsAdd_64f_I(&tempvel[9 * length], tempvel, length);// D[e(kx, ky, kz), kx]- (-)(-) / sqrt()**********(Sub -> func2)(Add->func1)
 	ippsAdd_64f_I(&tempvel[4 * length], tempvel, length); //D[e(kx, ky, kz), kx] - (-)(-) / sqrt()+/D[e(kx+Pi/2a, ky+Pi/2b, kz), kx]
 	ippsMulC_64f(tempvel, 0.5, out, length);//0.5*()
 
@@ -912,7 +912,7 @@ int veloYD(Ipp64f *params, Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int length, Ipp64
 	ippsSqrt_64f_I(&tempvel[8 * length], length);//Sqrt(4*delta^2+(e-ePi)^2)
 	ippsMul_64f(&tempvel[6 * length], &tempvel[7 * length], &tempvel[9 * length], length);//(e(kx+Pi/2a,ky+Pi/2b,kz)-e(kx,ky,kz))*(D[e(kx+Pi/2a, ky+Pi/2b, kz), ky]- D[e(kx,ky,kz),ky])
 	ippsDiv_64f_I(&tempvel[8 * length], &tempvel[9 * length], length);//(-)(-)/sqrt()
-	ippsSub_64f_I(&tempvel[9 * length], tempvel, length);// D[e(kx, ky, kz), ky]- (-)(-) / sqrt()**********(Sub -> func2)(Add->func1)
+	ippsAdd_64f_I(&tempvel[9 * length], tempvel, length);// D[e(kx, ky, kz), ky]- (-)(-) / sqrt()**********(Sub -> func2)(Add->func1)
 	ippsAdd_64f_I(&tempvel[4 * length], tempvel, length); //D[e(kx, ky, kz), ky] - (-)(-) / sqrt()+/D[e(kx+Pi/2a, ky+Pi/2b, kz), ky]
 	ippsMulC_64f(tempvel, 0.5, out, length);//0.5*()
 
