@@ -352,7 +352,7 @@ FindFermi::FindFermi(Ipp64f * param)
 	//DataExtractor extractor(name);
 	//Ipp64f params[9] = { 0.074, 475, 525, -60, 16, 1000, 0.5, 17, 8 };
 	UpdatePar(param);
-	fineN = 1500;//innitial grid inplane
+	fineN = 1000;//innitial grid inplane
 	NumLeng = 0;//number of contour 
 
 	cdevs = 8;//Kz grid
@@ -379,7 +379,7 @@ FindFermi::FindFermi(Ipp64f * param)
 	lengArr = new int[20 * cdevs];
 	kx = new Ipp64f[nfinepoint];
 	ky = new Ipp64f[nfinepoint];
-	finDis = 3.1415926 / 3.747665940 / 15;
+	finDis = 3.1415926 / 3.747665940 / 25;
 	tempx1 = new Ipp64f[nfinepoint];
 	tempy1 = new Ipp64f[nfinepoint];
 	tempx2 = new Ipp64f[nfinepoint];
@@ -391,8 +391,8 @@ FindFermi::FindFermi(Ipp64f * param)
 	tempz = new Ipp64f[nfinepoint];
 	Ipp64f kxrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
 	Ipp64f kyrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
-	Ipp64f kxrangeU = 3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
-	Ipp64f kyrangeU = 3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
+	Ipp64f kxrangeU = 0;//Pi/a=3.1415926 / 3.747665940
+	Ipp64f kyrangeU = 0;//Pi/a=3.1415926 / 3.747665940
 	
 
 	//Ipp64f *startpoint = new Ipp64f[3 * nPoints];
@@ -426,10 +426,10 @@ FindFermi::FindFermi(Ipp64f * param)
 		cout << params[i] << ", ";
 	}
 	cout << endl;
-	funcfd1(params, argkz, tempx1, tempy1, nfinepoint, temp1, tfunc,temp2);
-	funcfd1(params, argkz, tempx2, tempy2, nfinepoint, temp1, tfunc1, temp2);
-	funcfd1(params, argkz, tempx3, tempy3, nfinepoint, temp1, tfunc2, temp2);
-	funcfd1(params, argkz, tempx4, tempy4, nfinepoint, temp1, tfunc3, temp2);
+	funcfd2(params, argkz, tempx1, tempy1, nfinepoint, temp1, tfunc,temp2);
+	funcfd2(params, argkz, tempx2, tempy2, nfinepoint, temp1, tfunc1, temp2);
+	funcfd2(params, argkz, tempx3, tempy3, nfinepoint, temp1, tfunc2, temp2);
+	funcfd2(params, argkz, tempx4, tempy4, nfinepoint, temp1, tfunc3, temp2);
 	
 	/*
 	funcf1(params, argkz, tempx1, tempy1, nfinepoint, temp1, tfunc, temp2);
@@ -623,6 +623,43 @@ FindFermi::FindFermi(Ipp64f * param)
 			}
 		}
 	}
+	cout << nPoints << endl;
+	/*
+	for (int i = 0; i < 10; i++)
+	{  
+		//func(params, argkz, argCos, argSin, r, nfinepoint, temp1, funcval);
+		funcfd1(params, kz, kx, ky, nPoints, temp1, tfunc, temp2);
+
+		//func(nPoints, temp1,funcval);
+		//cout << argCos[1] << endl;
+		
+		
+		ippsAddC_64f(ky, 1E-15, tempy1, nPoints );
+		//func(params, argkz, argCos, argSin, rtemp, nfinepoint, temp1, dfunc1);
+		funcfd2(params, kz, kx, tempy1, nPoints , temp1, tfunc1, temp2);
+
+		//func(nPoints, temp1,dfunc1);
+		ippsAddC_64f(ky, -1E-15, tempy1, nPoints );
+		//func(params, argkz, argCos, argSin, rtemp, nfinepoint, temp1, dfunc2);
+		funcfd2(params, kz, kx, tempy1, nPoints , temp1, tfunc2, temp2);
+		//func(nPoints, temp1, dfunc2);
+		ippsMulC_64f_I(-1, tfunc2, nPoints);
+		ippsAdd_64f(tfunc1, tfunc2, tfunc3, nPoints );
+		ippsDivC_64f_I(2E-15, tfunc3, nPoints );
+
+		ippsDiv_64f_I(tfunc3, tfunc, nPoints );
+		ippsSub_64f_I(tfunc, ky, nPoints );
+
+	}
+	*/
+	//for (int i = 0; i < nPoints; i++)
+	//{
+	//	cout << r[i] << endl;
+	//}
+	//ippsMul_64f(r, argCos, kx, nPoints);
+	//ippsMul_64f(r, argSin, ky, nPoints);
+
+
 
 	//cout << lengArr << "Second times	" << NumLeng << "	" << endl;
 	nPoints = interfunc(kx, ky, kz, lengArr, NumLeng, finDis, temp1, tempx1, tempx2, tempy2, tempz);
@@ -673,11 +710,27 @@ int FindFermi::ReturnStart(Ipp64f * startpoint)
 		startpoint[i * 3 + 1] = tempy2[i];
 		startpoint[i * 3 + 2] = tempz[i];
 	}
+	for (int i = 0; i < nPoints; i++) {
+		startpoint[i * 3 +  3*nPoints] = -tempx2[i];
+		startpoint[i * 3 +  3*nPoints + 1] = tempy2[i];
+		startpoint[i * 3 +  3*nPoints + 2] = tempz[i];
+	}
+	for (int i = 0; i < nPoints; i++) {
+		startpoint[i * 3 + 6*nPoints] = tempx2[i];
+		startpoint[i * 3 + 6*nPoints  + 1] = -tempy2[i];
+		startpoint[i * 3 + 6*nPoints + 2] = tempz[i];
+	}
+	for (int i  = 0; i < nPoints; i++) {
+		startpoint[i * 3 + 9*nPoints] = -tempx2[i];
+		startpoint[i * 3 + 9*nPoints  + 1] = -tempy2[i];
+		startpoint[i * 3 + 9*nPoints  + 2] = tempz[i];
+	}
+
 	ofstream fout;
 	fout.open("FindFermi2.dat");
 	fout.precision(15);
 
-	for (int i = 0; i < nPoints; i++) {
+	for (int i = 0; i < 4 * nPoints; i++) {
 
 		fout << startpoint[i * 3] << "\t" << startpoint[i * 3 + 1] << "\t" << startpoint[i * 3 + 2] << endl;
 		//	fout << theta[i] << "\t" << r[i] << "\t" << kz[i] << endl;
