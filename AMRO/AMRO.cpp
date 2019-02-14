@@ -43,10 +43,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	
 	const int numthetas = 21;
+	const int phinum = 4;
 	Ipp64f thetas[numthetas] = { 0., 0.0872665, 0.174533, 0.261799, 0.349066, 0.436332, 0.523599, \
 0.610865, 0.698132, 0.785398, 0.872665, 0.959931, 1.0472, 1.13446, \
 1.22173, 1.309, 1.39626, 1.48353, 1.5708, 1.65806, 1.74533 };
-	Ipp64f *condout = new Ipp64f[numthetas];
+	Ipp64f phi[phinum] = { 0, 0.261799 , 0.523599, 0.785398 };
+	Ipp64f *condout = new Ipp64f[numthetas*phinum];
 	//Ipp64f*condout = new Ipp64f[46];
 	//Ipp64f tau = .5;
 	//Ipp64f final = 10* params[0];//time final?
@@ -68,8 +70,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	
 	Ipp64f *starts = new Ipp64f[nPoints * 3 ];
+	Ipp64f *circum = new Ipp64f[nPoints];
 	Fermi.ReturnStart(starts);
-	
+	Fermi.ReturnCircum(circum);
 	Ipp64f *output = new Ipp64f[nPoints * steps * 4]; //stores evolution of orbit around Fermi surface
 	Ipp64f *times = new Ipp64f[steps * nPoints]; //time steps
 
@@ -152,227 +155,230 @@ int _tmain(int argc, _TCHAR* argv[])
 	//ippsMin_64f(DOS, nPoints, Dos0);
 	ippsMax_64f(DOS, nPoints, maxDos);
 	ippsMin_64f(DOS, nPoints, minDos);
-	for (int th = 0; th < numthetas; th++) {
-
-		//for (int p = 0; p < steps; p++) { //re-initialize times SLOW STEP CREATE TEMP VARIABLE
-			//times[p] = -p;//why -p?
-		//	ippsSet_64f(-p, &times[nPoints * p],nPoints);
-		//}
-		ippsSet_64f(-1, times, steps*nPoints);
-		ippsMulC_64f_I(h, times, steps*nPoints);//time stamps
-
-		//field[0] = field45 * sin(thetas[th]) * cos(params[9]);  //set field(phi == 0?)
-		//field[1] = field45 * sin(thetas[th]) * sin(params[9]);
-		field[0] = field45 * sin(thetas[th]) * cos(params[10]);  //for testing DOS tau
-		field[1] = field45 * sin(thetas[th]) * sin(params[10]);
-		field[2] = field45 * cos(thetas[th]);
-		//for (int z = 0; z < nPoints; z++) {
-		//	if (th == 0 ) {
-		//		cout << setprecision(20) << times[nPoints*2 + z] << " " << endl;
-		//	}
-		//}
+	for (int ph = 0; ph < phinum; ++ph) {
 
 
-		for (int i = 1; i < steps; i++) {
+		for (int th = 0; th < numthetas; th++) {
 
-			ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 0)], argx, nPoints);//copy arguments for k1;
-			ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
-			ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
-			/*
-			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
-			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-			*/
+			//for (int p = 0; p < steps; p++) { //re-initialize times SLOW STEP CREATE TEMP VARIABLE
+				//times[p] = -p;//why -p?
+			//	ippsSet_64f(-p, &times[nPoints * p],nPoints);
+			//}
+			ippsSet_64f(-1, times, steps*nPoints);
+			ippsMulC_64f_I(h, times, steps*nPoints);//time stamps
 
-			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
-			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-
-
-			ippsCopy_64f(vz, &vzStorage[nPoints * (i - 1)], nPoints);//store vz for conductivity later
-
-			taufun(params, *minDos, *maxDos, argx, argy, argz, nPoints, tempx, taus, ones);// calculate k dependent tau
-			ippsDiv_64f_I(taus, &times[nPoints * (i - 1)], nPoints);
-			//ippsDivC_64f_I(tau, &times[nPoints * (i - 1)], nPoints);
-			//ippsExp_64f_I(&times[nPoints * (i-1)], nPoints);
-			//ippsMulC_64f_I((1E-12) * h, &times[nPoints * (i-1)], nPoints);
-
-			//taufun(params, argx, argy, nPoints, tempx, taus);
+			//field[0] = field45 * sin(thetas[th]) * cos(params[9]);  //set field(phi == 0?)
+			//field[1] = field45 * sin(thetas[th]) * sin(params[9]);
+			field[0] = field45 * sin(thetas[th]) * cos(phi[ph]);  //for testing DOS tau
+			field[1] = field45 * sin(thetas[th]) * sin(phi[ph]);
+			field[2] = field45 * cos(thetas[th]);
 			//for (int z = 0; z < nPoints; z++) {
-			//	if (th == 0 && i == 30) {
-			//		cout << setprecision(20) << taus[z] << " " << endl;
+			//	if (th == 0 ) {
+			//		cout << setprecision(20) << times[nPoints*2 + z] << " " << endl;
 			//	}
 			//}
-			/*for (int z = 0; z < nPoints; z++) {
-			if (th == 1 && i == 1) {
-			cout << setprecision(20)<< argx[z] << " " << endl;
+
+
+			for (int i = 1; i < steps; i++) {
+
+				ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 0)], argx, nPoints);//copy arguments for k1;
+				ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
+				ippsCopy_64f(&output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+				/*
+				veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+				*/
+
+				veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+
+
+				ippsCopy_64f(vz, &vzStorage[nPoints * (i - 1)], nPoints);//store vz for conductivity later
+
+				taufun(params, *minDos, *maxDos, argx, argy, argz, nPoints, tempx, taus, ones);// calculate k dependent tau
+				ippsDiv_64f_I(taus, &times[nPoints * (i - 1)], nPoints);
+				//ippsDivC_64f_I(tau, &times[nPoints * (i - 1)], nPoints);
+				//ippsExp_64f_I(&times[nPoints * (i-1)], nPoints);
+				//ippsMulC_64f_I((1E-12) * h, &times[nPoints * (i-1)], nPoints);
+
+				//taufun(params, argx, argy, nPoints, tempx, taus);
+				//for (int z = 0; z < nPoints; z++) {
+				//	if (th == 0 && i == 30) {
+				//		cout << setprecision(20) << taus[z] << " " << endl;
+				//	}
+				//}
+				/*for (int z = 0; z < nPoints; z++) {
+				if (th == 1 && i == 1) {
+				cout << setprecision(20)<< argx[z] << " " << endl;
+				}
+				}*/
+
+
+				fx(field, vy, vz, nPoints, tempx, k1x); //calculate evolution in k and store in k1
+				fy(field, vx, vz, nPoints, tempy, k1y);
+				fz(field, vx, vy, nPoints, tempz, k1z);
+
+				ippsMulC_64f(k1x, h / 2, tempx, nPoints); //prep evolved k step for k2
+				ippsMulC_64f(k1y, h / 2, tempy, nPoints);
+				ippsMulC_64f(k1z, h / 2, tempz, nPoints);
+				ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k2;
+				ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
+				ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+				/*
+				veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+				*/
+				veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+
+				fx(field, vy, vz, nPoints, tempx, k2x); //calculate evolution in k and store in k2
+				fy(field, vx, vz, nPoints, tempy, k2y);
+				fz(field, vx, vy, nPoints, tempz, k2z);
+
+				ippsMulC_64f(k2x, h / 2, tempx, nPoints); //prep evolved k step for k3
+				ippsMulC_64f(k2y, h / 2, tempy, nPoints);
+				ippsMulC_64f(k2z, h / 2, tempz, nPoints);
+				ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k3;
+				ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
+				ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+				/*
+				veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+				*/
+				veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+
+				fx(field, vy, vz, nPoints, tempx, k3x); //calculate evolution in k and store in k3
+				fy(field, vx, vz, nPoints, tempy, k3y);
+				fz(field, vx, vy, nPoints, tempz, k3z);
+
+				ippsMulC_64f(k3x, h, tempx, nPoints); //prep evolved k step for k4
+				ippsMulC_64f(k3y, h, tempy, nPoints);
+				ippsMulC_64f(k3z, h, tempz, nPoints);
+				ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k4;
+				ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
+				ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
+				/*
+				veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+				*/
+				veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
+				veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+				veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+
+				fx(field, vy, vz, nPoints, tempx, k4x); //calculate evolution in k and store in k4
+				fy(field, vx, vz, nPoints, tempy, k4y);
+				fz(field, vx, vy, nPoints, tempz, k4z);
+
+				ippsMulC_64f_I(2, k2x, nPoints); //scale k2
+				ippsMulC_64f_I(2, k2y, nPoints);
+				ippsMulC_64f_I(2, k2z, nPoints);
+				ippsMulC_64f_I(2, k3x, nPoints); //scale k3
+				ippsMulC_64f_I(2, k3y, nPoints);
+				ippsMulC_64f_I(2, k3z, nPoints);
+
+				ippsAdd_64f(k1x, k2x, tempx, nPoints); //add k1 + k2 to temp
+				ippsAdd_64f(k1y, k2y, tempy, nPoints);
+				ippsAdd_64f(k1z, k2z, tempz, nPoints);
+
+				ippsAdd_64f_I(k3x, tempx, nPoints); //add in k3
+				ippsAdd_64f_I(k3y, tempy, nPoints);
+				ippsAdd_64f_I(k3z, tempz, nPoints);
+
+				ippsAdd_64f_I(k4x, tempx, nPoints); //add in k4
+				ippsAdd_64f_I(k4y, tempy, nPoints);
+				ippsAdd_64f_I(k4z, tempz, nPoints);
+
+				ippsMulC_64f_I(h / 6, tempx, nPoints); //scale the entire sum
+				ippsMulC_64f_I(h / 6, tempy, nPoints); //scale the entire sum
+				ippsMulC_64f_I(h / 6, tempz, nPoints); //scale the entire sum
+
+				ippsAdd_64f(&output[nPoints * (3 * (i - 1) + 0)], tempx, &output[nPoints * (3 * i + 0)], nPoints); //add sum to previous output and store
+				ippsAdd_64f(&output[nPoints * (3 * (i - 1) + 1)], tempy, &output[nPoints * (3 * i + 1)], nPoints);
+				ippsAdd_64f(&output[nPoints * (3 * (i - 1) + 2)], tempz, &output[nPoints * (3 * i + 2)], nPoints);
 			}
-			}*/
 
 
-			fx(field, vy, vz, nPoints, tempx, k1x); //calculate evolution in k and store in k1
-			fy(field, vx, vz, nPoints, tempy, k1y);
-			fz(field, vx, vy, nPoints, tempz, k1z);
+			ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 0)], argx, nPoints);//get velocity for last point
+			ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 1)], argy, nPoints);
+			ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 2)], argz, nPoints);
 
-			ippsMulC_64f(k1x, h / 2, tempx, nPoints); //prep evolved k step for k2
-			ippsMulC_64f(k1y, h / 2, tempy, nPoints);
-			ippsMulC_64f(k1z, h / 2, tempz, nPoints);
-			ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k2;
-			ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
-			ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
-			/*
-			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
-			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-			*/
-			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
+			//veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
 			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-			
-			fx(field, vy, vz, nPoints, tempx, k2x); //calculate evolution in k and store in k2
-			fy(field, vx, vz, nPoints, tempy, k2y);
-			fz(field, vx, vy, nPoints, tempz, k2z);
+			ippsCopy_64f(vz, &vzStorage[nPoints * (steps - 1)], nPoints);
 
-			ippsMulC_64f(k2x, h / 2, tempx, nPoints); //prep evolved k step for k3
-			ippsMulC_64f(k2y, h / 2, tempy, nPoints);
-			ippsMulC_64f(k2z, h / 2, tempz, nPoints);
-			ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k3;
-			ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
-			ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
-			/*
-			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
-			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
+			taufun(params, *minDos, *maxDos, argx, argy, argz, nPoints, tempx, taus, ones);// calculate k dependent tau for last point
+			ippsDiv_64f_I(taus, &times[nPoints * (steps - 1)], nPoints);
+			//ippsDivC_64f_I(tau, &times[nPoints * (steps - 1)], nPoints);
+			//ippsExp_64f_I(&times[nPoints * (steps - 1)], nPoints);
+			//ippsMulC_64f_I((1E-12)*h, &times[nPoints * (steps - 1)], nPoints);
+
+		/*	ippsCopy_64f(&output[nPoints * (0)], argx, nPoints);//initial velocities for DOS calc;
+			ippsCopy_64f(&output[nPoints * (1)], argy, nPoints);
+			ippsCopy_64f(&output[nPoints * (2)], argz, nPoints);
+			veloX(params, argx, argy, argz, nPoints, tempx, vx); //velocities for DOS are stored in vx, vy, and vz buffers.
+			veloY(params, argx, argy, argz, nPoints, tempy, vy);
+			veloZ(params, argx, argy, argz, nPoints, tempz, vz);
+
+			ippsSqr_64f_I(vx, nPoints);//in-place square of velocities
+			ippsSqr_64f_I(vy, nPoints);
+			ippsSqr_64f_I(vz, nPoints);
+
+			ippsAdd_64f(vx, vy, tempx, nPoints);//add all square velocities
+			ippsAdd_64f_I(vz, tempx, nPoints);
+			ippsSqrt_64f_I(tempx, nPoints);//square root
+			ippsDiv_64f(tempx, ones, DOS, nPoints);
 			*/
-			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
-			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-			
-			fx(field, vy, vz, nPoints, tempx, k3x); //calculate evolution in k and store in k3
-			fy(field, vx, vz, nPoints, tempy, k3y);
-			fz(field, vx, vy, nPoints, tempz, k3z);
 
-			ippsMulC_64f(k3x, h, tempx, nPoints); //prep evolved k step for k4
-			ippsMulC_64f(k3y, h, tempy, nPoints);
-			ippsMulC_64f(k3z, h, tempz, nPoints);
-			ippsAdd_64f(tempx, &output[nPoints * (3 * (i - 1) + 0)], argx, nPoints); //add step to previous k point, load into arguments for k4;
-			ippsAdd_64f(tempy, &output[nPoints * (3 * (i - 1) + 1)], argy, nPoints);
-			ippsAdd_64f(tempz, &output[nPoints * (3 * (i - 1) + 2)], argz, nPoints);
-			/*
-			veloX(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloY(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
-			veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-			*/
-			veloXD(params, argx, argy, argz, nPoints, tempx, tempfunc, vx); //calculate velocities;
-			veloYD(params, argx, argy, argz, nPoints, tempy, tempfunc, vy);
-			veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-			
-			fx(field, vy, vz, nPoints, tempx, k4x); //calculate evolution in k and store in k4
-			fy(field, vx, vz, nPoints, tempy, k4y);
-			fz(field, vx, vy, nPoints, tempz, k4z);
+			//need to change!!
+			  //ippsDiv_64f_I(taus, times, steps);//exponential stuff, negative tau is taken care of in time
+			  //ippsExp_64f_I(times, steps);
+			  //ippsMulC_64f_I((1E-12)*h, times, steps);
 
-			ippsMulC_64f_I(2, k2x, nPoints); //scale k2
-			ippsMulC_64f_I(2, k2y, nPoints);
-			ippsMulC_64f_I(2, k2z, nPoints);
-			ippsMulC_64f_I(2, k3x, nPoints); //scale k3
-			ippsMulC_64f_I(2, k3y, nPoints);
-			ippsMulC_64f_I(2, k3z, nPoints);
+			ippsCopy_64f(&vzStorage[0], vz0Storage, nPoints);//save initial velocity before exp
 
-			ippsAdd_64f(k1x, k2x, tempx, nPoints); //add k1 + k2 to temp
-			ippsAdd_64f(k1y, k2y, tempy, nPoints);
-			ippsAdd_64f(k1z, k2z, tempz, nPoints);
+			for (int i = 0; i < steps; i++) {
 
-			ippsAdd_64f_I(k3x, tempx, nPoints); //add in k3
-			ippsAdd_64f_I(k3y, tempy, nPoints);
-			ippsAdd_64f_I(k3z, tempz, nPoints);
+				if (i == 0) { ippsSet_64f(1, &exptau[nPoints * (i)], nPoints); }//start time to be 0 
+				else if (i > 1) {
+					ippsAdd_64f_I(&times[(i - 2) * nPoints], &times[(i - 1)* nPoints], nPoints);
+					ippsExp_64f(&times[nPoints * (i - 1)], &exptau[nPoints * (i)], nPoints);
+				}
+				else {
+					ippsExp_64f(&times[nPoints * (i - 1)], &exptau[nPoints * (i)], nPoints);
+				}//integration of (1/tau)
 
-			ippsAdd_64f_I(k4x, tempx, nPoints); //add in k4
-			ippsAdd_64f_I(k4y, tempy, nPoints);
-			ippsAdd_64f_I(k4z, tempz, nPoints);
+			//	ippsExp_64f(&times[nPoints * (i)], &exptau[nPoints * (i)], nPoints);
+				ippsMulC_64f_I((1E-12) * h, &exptau[nPoints * (i)], nPoints);
+				ippsMul_64f_I(&exptau[nPoints * (i)], &vzStorage[i * nPoints], nPoints); //multiply velocities by exp time factor
 
-			ippsMulC_64f_I(h / 6, tempx, nPoints); //scale the entire sum
-			ippsMulC_64f_I(h / 6, tempy, nPoints); //scale the entire sum
-			ippsMulC_64f_I(h / 6, tempz, nPoints); //scale the entire sum
-
-			ippsAdd_64f(&output[nPoints * (3 * (i - 1) + 0)], tempx, &output[nPoints * (3 * i + 0)], nPoints); //add sum to previous output and store
-			ippsAdd_64f(&output[nPoints * (3 * (i - 1) + 1)], tempy, &output[nPoints * (3 * i + 1)], nPoints);
-			ippsAdd_64f(&output[nPoints * (3 * (i - 1) + 2)], tempz, &output[nPoints * (3 * i + 2)], nPoints);
-		}
-
-
-		ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 0)], argx, nPoints);//get velocity for last point
-		ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 1)], argy, nPoints);
-		ippsCopy_64f(&output[nPoints * (3 * (steps - 1) + 2)], argz, nPoints);
-		
-		//veloZ(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-		veloZD(params, argx, argy, argz, nPoints, tempz, tempfunc, vz);
-		ippsCopy_64f(vz, &vzStorage[nPoints * (steps - 1)], nPoints);
-
-		taufun(params, *minDos, *maxDos, argx, argy, argz, nPoints, tempx, taus, ones);// calculate k dependent tau for last point
-		ippsDiv_64f_I(taus, &times[nPoints * (steps - 1)], nPoints);
-		//ippsDivC_64f_I(tau, &times[nPoints * (steps - 1)], nPoints);
-		//ippsExp_64f_I(&times[nPoints * (steps - 1)], nPoints);
-		//ippsMulC_64f_I((1E-12)*h, &times[nPoints * (steps - 1)], nPoints);
-
-	/*	ippsCopy_64f(&output[nPoints * (0)], argx, nPoints);//initial velocities for DOS calc;
-		ippsCopy_64f(&output[nPoints * (1)], argy, nPoints);
-		ippsCopy_64f(&output[nPoints * (2)], argz, nPoints);
-		veloX(params, argx, argy, argz, nPoints, tempx, vx); //velocities for DOS are stored in vx, vy, and vz buffers.
-		veloY(params, argx, argy, argz, nPoints, tempy, vy);
-		veloZ(params, argx, argy, argz, nPoints, tempz, vz);
-
-		ippsSqr_64f_I(vx, nPoints);//in-place square of velocities
-		ippsSqr_64f_I(vy, nPoints);
-		ippsSqr_64f_I(vz, nPoints);
-
-		ippsAdd_64f(vx, vy, tempx, nPoints);//add all square velocities
-		ippsAdd_64f_I(vz, tempx, nPoints);
-		ippsSqrt_64f_I(tempx, nPoints);//square root
-		ippsDiv_64f(tempx, ones, DOS, nPoints);
-		*/
-
-		//need to change!!
-		  //ippsDiv_64f_I(taus, times, steps);//exponential stuff, negative tau is taken care of in time
-		  //ippsExp_64f_I(times, steps);
-		  //ippsMulC_64f_I((1E-12)*h, times, steps);
-
-		ippsCopy_64f(&vzStorage[0], vz0Storage, nPoints);//save initial velocity before exp
-
-		for (int i = 0; i < steps; i++) {
-
-			if (i == 0) { ippsSet_64f(1, &exptau[nPoints * (i)], nPoints); }//start time to be 0 
-			else if (i > 1) {
-				ippsAdd_64f_I(&times[(i - 2) * nPoints], &times[(i - 1)* nPoints], nPoints);
-				ippsExp_64f(&times[nPoints * (i - 1)], &exptau[nPoints * (i)], nPoints);
 			}
-			else {
-				ippsExp_64f(&times[nPoints * (i - 1)], &exptau[nPoints * (i)], nPoints);
-			}//integration of (1/tau)
 
-		//	ippsExp_64f(&times[nPoints * (i)], &exptau[nPoints * (i)], nPoints);
-			ippsMulC_64f_I((1E-12) * h, &exptau[nPoints * (i)], nPoints);
-			ippsMul_64f_I(&exptau[nPoints * (i)], &vzStorage[i * nPoints], nPoints); //multiply velocities by exp time factor
+			for (int i = 0; i < (steps - 1); i++) {
+				ippsAdd_64f_I(&vzStorage[i*nPoints], &vzStorage[(i + 1)*nPoints], nPoints); //add all and accumulate in last vector
+			}
 
+			ippsMul_64f_I(DOS, &vzStorage[(steps - 1)*nPoints], nPoints);
+			ippsMul_64f_I(vz0Storage, &vzStorage[(steps - 1)*nPoints], nPoints);//multiply by initial velocities
+			ippsMul_64f_I(circum, &vzStorage[(steps - 1)*nPoints], nPoints);//multiply by the circumference/Npoint of the layer
+			ippsSum_64f(&vzStorage[(steps - 1)*nPoints], nPoints, &total);//sum all elements of velocity vector
+
+			condout[th+ph*numthetas] = total;
+		}
 		}
 
-		for (int i = 0; i < (steps - 1); i++) {
-			ippsAdd_64f_I(&vzStorage[i*nPoints], &vzStorage[(i + 1)*nPoints], nPoints); //add all and accumulate in last vector
-		}
-
-		ippsMul_64f_I(DOS, &vzStorage[(steps - 1)*nPoints], nPoints);
-		ippsMul_64f_I(vz0Storage, &vzStorage[(steps - 1)*nPoints], nPoints);//multiply by initial velocities
-
-		ippsSum_64f(&vzStorage[(steps - 1)*nPoints], nPoints, &total);//sum all elements of velocity vector
-
-		condout[th] = total;
-	}
-
-
-	ippsDivC_64f(condout, condout[0], &tempx[2 * numthetas], numthetas);//normalize conductivity
-	ippsDiv_64f(&tempx[2 * numthetas], ones, tempx, numthetas);// 1/conductivity to get resistivity 
-	ippsSub_64f(tempx, data, &tempx[numthetas], numthetas);// (cal[theta]-dat[theta])
-	ippsMul_64f_I(&tempx[numthetas], &tempx[numthetas], numthetas);// (cal[theta]-dat[theta])^2
-	ippsSum_64f(&tempx[numthetas], numthetas, &residual);//sum( (cal[theta]-dat[theta])^2)
+		//ippsDivC_64f(condout, condout[0], &tempx[2 * numthetas], numthetas);//normalize conductivity
+		//ippsDiv_64f(&tempx[2 * numthetas], ones, tempx, numthetas);// 1/conductivity to get resistivity 
+		//ippsSub_64f(tempx, data, &tempx[numthetas], numthetas);// (cal[theta]-dat[theta])
+		//ippsMul_64f_I(&tempx[numthetas], &tempx[numthetas], numthetas);// (cal[theta]-dat[theta])^2
+		//ippsSum_64f(&tempx[numthetas], numthetas, &residual);//sum( (cal[theta]-dat[theta])^2)
 
 	duration = (std::clock() - startT) / (Ipp64f)CLOCKS_PER_SEC;
 	cout<<residual<<endl;
@@ -383,14 +389,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	fout.precision(20);
 	
 	//fout << residual << endl;
-	
-	for (int i = 0; i < numthetas; i++) {
+	for (int j = 0; j < phinum; j++) {
+		for (int i = 0; i < numthetas; i++) {
 
-		fout << thetas[i] << '\t' << condout[i] << endl;
-		//fout <<  condout[i] << endl;
-		//cout << thetas[i] << "\t" << condout[i] << endl;
+			fout << phi[j]<<'\t'<<thetas[i] << '\t' << condout[i+  j * numthetas] << endl;
+			//fout <<  condout[i] << endl;
+			//cout << thetas[i] << "\t" << condout[i] << endl;
+		}
 	}
-
 	/*or (int j = 0; j < 10; ++j) {
 		fout << params[j]<<"  ";
 	}

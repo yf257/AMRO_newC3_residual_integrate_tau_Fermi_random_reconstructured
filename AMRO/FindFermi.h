@@ -36,6 +36,7 @@ private:
 	Ipp64f *tempx4;
 	Ipp64f *tempy4;
 	Ipp64f *tempz;
+	Ipp64f *circumf;
 	//Ipp64f *startpoint ;
 	Ipp64f tol;
 
@@ -43,7 +44,8 @@ private:
 	int NumLeng;
 	int cdevs;
 	int nfinepoint;
-	Ipp64f finDis;
+	//Ipp64f finDis;
+	int finP;
 	Ipp64f params[9];
 
 
@@ -56,7 +58,9 @@ public:
 	int PrintPar();
 	int ReturnStart(Ipp64f *startpoint);
 	int ReturnNumPoint();
-	int interfunc(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int *Laylength, int Laynum, Ipp64f distance, Ipp64f *temp, Ipp64f *temp2, Ipp64f *outx, Ipp64f *outy, Ipp64f*outz);
+	int ReturnCircum(Ipp64f *circum);
+	//int interfunc(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int *Laylength, int Laynum, Ipp64f distance, Ipp64f *temp, Ipp64f *temp2, Ipp64f *outx, Ipp64f *outy, Ipp64f*outz);
+		int interfunc(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int *Laylength, int Laynum, int finePoint, Ipp64f *temp, Ipp64f *temp2, Ipp64f *outx, Ipp64f *outy, Ipp64f*outz,Ipp64f*outcircum);
 
 	//int interfunc(Ipp64f *theta, Ipp64f *kx, Ipp64f *ky, int Laylength, int clength, int flength, Ipp64f *temp, Ipp64f *temp2, Ipp64f *out);
 	virtual ~FindFermi();

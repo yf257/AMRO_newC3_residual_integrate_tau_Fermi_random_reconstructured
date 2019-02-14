@@ -303,6 +303,7 @@ int FindFermi::interfunc(Ipp64f *theta, Ipp64f *kx, Ipp64f *ky, int Laylength, i
 	}
 }
 */
+/*
 int FindFermi::interfunc(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int *Laylength, int Laynum, Ipp64f distance, Ipp64f *temp, Ipp64f *temp2, Ipp64f *outx, Ipp64f *outy, Ipp64f*outz) {
 	int count;
 	int cumLaylength = 0;
@@ -345,6 +346,53 @@ int FindFermi::interfunc(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int *Laylength, int
 
 	}
 	return finalPoint - 1;
+}*/
+int FindFermi::interfunc(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int *Laylength, int Laynum, int finePoint, Ipp64f *temp, Ipp64f *temp2, Ipp64f *outx, Ipp64f *outy, Ipp64f*outz,  Ipp64f*outcircum) {
+	int count;
+	int cumLaylength = 0;
+	int finalPoint = 0;
+	for (int i = 0; i < Laynum; ++i) {
+		ippsSub_64f(&kx[cumLaylength], &kx[cumLaylength + 1], temp, Laylength[i] - 1);//kx[i+1]-kx[i]
+		ippsSub_64f(&ky[cumLaylength], &ky[cumLaylength + 1], &temp[(Laylength[i] - 1)], Laylength[i] - 1);//ky[i+1]-ky[i]
+		ippsMul_64f_I(&temp[2 * 0 * (Laylength[i] - 1)], &temp[2 * 0 * (Laylength[i])], Laylength[i] - 1);//(kx[i+1]-kx[i])^2
+		ippsMul_64f_I(&temp[(2 * 0 + 1) * (Laylength[i] - 1)], &temp[(2 * 0 + 1) * (Laylength[i] - 1)], Laylength[i] - 1);//(ky[i+1]-ky[i])^2
+		ippsAdd_64f_I(&temp[2 * 0 * (Laylength[i] - 1)], &temp[(2 * 0 + 1) * (Laylength[i] - 1)], Laylength[i] - 1);//(kx[i+1]-kx[i])^2+(ky[i+1]-ky[i])^2
+		ippsSqrt_64f_I(&temp[(2 * 0 + 1) * (Laylength[i] - 1)], Laylength[i] - 1);//Sqrt[(kx[i+1]-kx[i])^2+(ky[i+1]-ky[i])^2]
+		if (Laylength[i] > 2) {
+			for (int j = 0; j < Laylength[i]; ++j) {
+				temp[j] = 0;
+
+				for (int k = 0; k < j; ++k) {
+					temp[j] = temp[j] + temp[(2 * 0 + 1) * (Laylength[i] - 1) + k];//cumulative sum
+				}
+			}
+			for (int j = 0; j < finePoint; ++j) {
+				temp2[j] = temp[Laylength[i] - 1] / finePoint * j+ temp[Laylength[i] - 1] / finePoint*0.5;
+			}
+			count = 1;
+			outx[finalPoint] = kx[cumLaylength];
+			outy[finalPoint] = ky[cumLaylength];
+			outz[finalPoint] = kz[cumLaylength];
+			for (int k = 0; k < Laylength[i]; ++k) {
+				if (count > finePoint - 1) break;
+				if (temp[k] >= temp2[count]) {
+					if ((temp[k] - temp[k - 1]) == 0) cout << "zero!" << endl;
+					outx[finalPoint + count] = kx[cumLaylength + k - 1] + (kx[cumLaylength + k] - kx[cumLaylength + k - 1])*(temp2[count] - temp[k - 1]) / (temp[k] - temp[k - 1]);
+					outz[finalPoint + count] = kz[cumLaylength];
+					outy[finalPoint + count] = ky[cumLaylength + k - 1] + (ky[cumLaylength + k] - ky[cumLaylength + k - 1])*(temp2[count] - temp[k - 1]) / (temp[k] - temp[k - 1]);
+					outcircum[finalPoint + count] = temp[Laylength[i] - 1] / finePoint;
+					++count;
+
+				}
+			}
+			finalPoint = finalPoint + count;
+		  }
+			cumLaylength = cumLaylength + Laylength[i];
+		//cout << finalPoint << endl;
+
+
+			}
+	return finalPoint;// - 1;
 }
 FindFermi::FindFermi(Ipp64f * param)
 {
@@ -352,7 +400,7 @@ FindFermi::FindFermi(Ipp64f * param)
 	//DataExtractor extractor(name);
 	//Ipp64f params[9] = { 0.074, 475, 525, -60, 16, 1000, 0.5, 17, 8 };
 	UpdatePar(param);
-	fineN = 1000;//innitial grid inplane
+	fineN = 2000;//innitial grid inplane
 	NumLeng = 0;//number of contour 
 
 	cdevs = 8;//Kz grid
@@ -379,7 +427,8 @@ FindFermi::FindFermi(Ipp64f * param)
 	lengArr = new int[20 * cdevs];
 	kx = new Ipp64f[nfinepoint];
 	ky = new Ipp64f[nfinepoint];
-	finDis = 3.1415926 / 3.747665940 / 25;
+	//finDis = 3.1415926 / 3.747665940 / 25;
+	finP = 80;
 	tempx1 = new Ipp64f[nfinepoint];
 	tempy1 = new Ipp64f[nfinepoint];
 	tempx2 = new Ipp64f[nfinepoint];
@@ -389,6 +438,7 @@ FindFermi::FindFermi(Ipp64f * param)
 	tempx4 = new Ipp64f[nfinepoint];
 	tempy4 = new Ipp64f[nfinepoint];
 	tempz = new Ipp64f[nfinepoint];
+	circumf = new Ipp64f[finP*30];
 	Ipp64f kxrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
 	Ipp64f kyrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
 	Ipp64f kxrangeU = 0;//Pi/a=3.1415926 / 3.747665940
@@ -571,7 +621,7 @@ FindFermi::FindFermi(Ipp64f * param)
 							continue;
 						}
 						//four corners
-						/*
+						
 						if ((current) % fineN != 0 && (current) / fineN != 0 && funcval[current - 1 - fineN + k * (fineN*fineN)] < 3.1 && funcval[current - 1 - fineN + k * (fineN*fineN)] > 0.5) {
 							kx[nPoints] = 0.25*(tempx1[current - 1 - fineN + k * (fineN*fineN)] + tempx2[current - 1 - fineN + k * (fineN*fineN)] + tempx3[current - 1 - fineN + k * (fineN*fineN)] + tempx4[current - 1 - fineN + k * (fineN*fineN)]);
 							ky[nPoints] = 0.25*(tempy1[current - 1 - fineN + k * (fineN*fineN)] + tempy2[current - 1 - fineN + k * (fineN*fineN)] + tempy3[current - 1 - fineN + k * (fineN*fineN)] + tempy4[current - 1 - fineN + k * (fineN*fineN)]);
@@ -612,7 +662,7 @@ FindFermi::FindFermi(Ipp64f * param)
 							lengArr[NumLeng - 1] = lengArr[NumLeng - 1] + 1;
 							continue;
 						}
-						*/
+						
 						//cout << lengArr[NumLeng - 1] << endl;
 						break;
 
@@ -623,7 +673,7 @@ FindFermi::FindFermi(Ipp64f * param)
 			}
 		}
 	}
-	cout << nPoints << endl;
+	cout << NumLeng << endl;
 	/*
 	for (int i = 0; i < 10; i++)
 	{  
@@ -662,7 +712,7 @@ FindFermi::FindFermi(Ipp64f * param)
 
 
 	//cout << lengArr << "Second times	" << NumLeng << "	" << endl;
-	nPoints = interfunc(kx, ky, kz, lengArr, NumLeng, finDis, temp1, tempx1, tempx2, tempy2, tempz);
+	nPoints = interfunc(kx, ky, kz, lengArr, NumLeng, finP, temp1, tempx1, tempx2, tempy2, tempz,circumf);
 	
 }
 int FindFermi::UpdatePar(Ipp64f * param)
@@ -685,6 +735,28 @@ int FindFermi::PrintPar()
 }
 
 
+int FindFermi::ReturnCircum(Ipp64f *circum) {
+	
+	for (int i = 0; i < nPoints; i++) {
+		circum[i] = circumf[i];
+		
+	}
+	for (int i = 0; i < nPoints; i++) {
+		circum[i+  nPoints] = circumf[i];
+		
+	}
+	for (int i = 0; i < nPoints; i++) {
+		circum[i  + 2 * nPoints] = circumf[i];
+		
+	}
+	for (int i = 0; i < nPoints; i++) {
+		circum[i + 3 * nPoints] = circumf[i];
+		
+	}
+
+	return 0;
+
+}
 
 int FindFermi::ReturnStart(Ipp64f * startpoint)
 {
@@ -730,7 +802,7 @@ int FindFermi::ReturnStart(Ipp64f * startpoint)
 	fout.open("FindFermi2.dat");
 	fout.precision(15);
 
-	for (int i = 0; i < 4 * nPoints; i++) {
+	for (int i = 0; i < nPoints; i++) {
 
 		fout << startpoint[i * 3] << "\t" << startpoint[i * 3 + 1] << "\t" << startpoint[i * 3 + 2] << endl;
 		//	fout << theta[i] << "\t" << r[i] << "\t" << kz[i] << endl;
