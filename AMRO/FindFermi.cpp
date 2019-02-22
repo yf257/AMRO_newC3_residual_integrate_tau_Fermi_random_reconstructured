@@ -164,12 +164,16 @@ int   FindFermi::funcfd2(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * k
 	ippsMul_64f_I(&temp[4 * length], temp, length); // mult by cos sin/2
 	ippsMulC_64f(argkz, 0.5, &temp[8 * length], length); //kzc / 2
 	vdCos(length, &temp[8 * length], &temp[7 * length]); // cos kzc/2
+	vdCos(length, &temp[8 * length], &temp[9 * length]);
 	ippsMul_64f_I(&temp[7 * length], temp, length); // mult by cos  kz/2
 	ippsMulC_64f_I(-35164.83516 * params[6-1], temp, length);
+
+	ippsMulC_64f_I(-35164.83516 * params[7 - 1], &temp[9 * length], length);
 
 
 	ippsAddC_64f_I(params[2 - 1] * (35164.83516) / 2, out, length);//eigenval[2]-5*10^6
 	ippsAdd_64f_I(temp, out, length);
+	ippsAdd_64f_I(&temp[9 * length], out, length);
 
 
 	return 0;
@@ -204,13 +208,17 @@ int   FindFermi::funcfd1(Ipp64f *params, Ipp64f * argkz, Ipp64f * kx, Ipp64f * k
 	ippsMul_64f_I(&temp[4 * length], temp, length); // mult by cos sin/2
 	ippsMulC_64f(argkz, 0.5, &temp[8 * length], length); //kzc / 2
 	vdCos(length, &temp[8 * length], &temp[7 * length]); // cos kzc/2
+	vdCos(length, &temp[8 * length], &temp[9 * length]);
+
 	ippsMul_64f_I(&temp[7 * length], temp, length); // mult by cos  kz/2
 	ippsMulC_64f_I(-35164.83516 * params[6 - 1], temp, length);
+
+	ippsMulC_64f_I(-35164.83516 *params[7 - 1], &temp[9 * length], length);
 
 
 	ippsAddC_64f_I(params[2 - 1] * (35164.83516) / 2, out, length);//eigenval[2]-5*10^6
 	ippsAdd_64f_I(temp, out, length);
-
+	ippsAdd_64f_I(&temp[9 * length], out, length);
 
 
 	
@@ -369,10 +377,12 @@ int FindFermi::interfunc(Ipp64f *kx, Ipp64f *ky, Ipp64f *kz, int *Laylength, int
 			for (int j = 0; j < finePoint; ++j) {
 				temp2[j] = temp[Laylength[i] - 1] / finePoint * j+ temp[Laylength[i] - 1] / finePoint*0.5;
 			}
-			count = 1;
+			/*count = 1;
 			outx[finalPoint] = kx[cumLaylength];
 			outy[finalPoint] = ky[cumLaylength];
 			outz[finalPoint] = kz[cumLaylength];
+			*/
+			count = 0;
 			for (int k = 0; k < Laylength[i]; ++k) {
 				if (count > finePoint - 1) break;
 				if (temp[k] >= temp2[count]) {
@@ -400,9 +410,9 @@ FindFermi::FindFermi(Ipp64f * param)
 	//DataExtractor extractor(name);
 	//Ipp64f params[9] = { 0.074, 475, 525, -60, 16, 1000, 0.5, 17, 8 };
 	UpdatePar(param);
-	fineN = 2000;//innitial grid inplane
+	fineN = 400;//innitial grid inplane
 	NumLeng = 0;//number of contour 
-
+	finP = 100;
 	cdevs = 8;//Kz grid
 	//Ipp64f * starts = extractor.getDataArray();
 	//int nPoints = floor((extractor.getNumberOfLines()) / 2);
@@ -428,7 +438,7 @@ FindFermi::FindFermi(Ipp64f * param)
 	kx = new Ipp64f[nfinepoint];
 	ky = new Ipp64f[nfinepoint];
 	//finDis = 3.1415926 / 3.747665940 / 25;
-	finP = 80;
+	
 	tempx1 = new Ipp64f[nfinepoint];
 	tempy1 = new Ipp64f[nfinepoint];
 	tempx2 = new Ipp64f[nfinepoint];
@@ -438,7 +448,7 @@ FindFermi::FindFermi(Ipp64f * param)
 	tempx4 = new Ipp64f[nfinepoint];
 	tempy4 = new Ipp64f[nfinepoint];
 	tempz = new Ipp64f[nfinepoint];
-	circumf = new Ipp64f[finP*30];
+	circumf = new Ipp64f[finP * 30];
 	Ipp64f kxrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
 	Ipp64f kyrangeD = -3.1415926 / 3.747665940;//Pi/a=3.1415926 / 3.747665940
 	Ipp64f kxrangeU = 0;//Pi/a=3.1415926 / 3.747665940
@@ -625,6 +635,18 @@ FindFermi::FindFermi(Ipp64f * param)
 						if ((current) % fineN != 0 && (current) / fineN != 0 && funcval[current - 1 - fineN + k * (fineN*fineN)] < 3.1 && funcval[current - 1 - fineN + k * (fineN*fineN)] > 0.5) {
 							kx[nPoints] = 0.25*(tempx1[current - 1 - fineN + k * (fineN*fineN)] + tempx2[current - 1 - fineN + k * (fineN*fineN)] + tempx3[current - 1 - fineN + k * (fineN*fineN)] + tempx4[current - 1 - fineN + k * (fineN*fineN)]);
 							ky[nPoints] = 0.25*(tempy1[current - 1 - fineN + k * (fineN*fineN)] + tempy2[current - 1 - fineN + k * (fineN*fineN)] + tempy3[current - 1 - fineN + k * (fineN*fineN)] + tempy4[current - 1 - fineN + k * (fineN*fineN)]);
+							
+							if (funcval[current + fineN + k * (fineN*fineN)] < 3.1 && funcval[current + fineN + k * (fineN*fineN)] >2.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 - fineN + k * (fineN*fineN)] - 1) + tempx2[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 - fineN + k * (fineN*fineN)] - 1) + tempx3[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 - fineN + k * (fineN*fineN)] - 1) + tempx4[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 - fineN + k * (fineN*fineN)] - 1));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 - fineN + k * (fineN*fineN)] - 1) + tempy2[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 - fineN + k * (fineN*fineN)] - 1) + tempy3[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 - fineN + k * (fineN*fineN)] - 1) + tempy4[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 - fineN + k * (fineN*fineN)] - 1));
+
+							}
+							if (funcval[current + fineN + k * (fineN*fineN)] < 1.5 && funcval[current + fineN + k * (fineN*fineN)] >0.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 - fineN + k * (fineN*fineN)]) + tempx2[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 - fineN + k * (fineN*fineN)]) + tempx3[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 - fineN + k * (fineN*fineN)]) + tempx4[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 - fineN + k * (fineN*fineN)]));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 - fineN + k * (fineN*fineN)]) + tempy2[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 - fineN + k * (fineN*fineN)]) + tempy3[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 - fineN + k * (fineN*fineN)]) + tempy4[current - 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 - fineN + k * (fineN*fineN)]));
+
+							}
+							
 							kz[nPoints] = tempz[current - 1 - fineN + k * (fineN*fineN)];
 							funcval[current - 1 - fineN + k * (fineN*fineN)] = 0;
 							nPoints = nPoints + 1;
@@ -635,6 +657,18 @@ FindFermi::FindFermi(Ipp64f * param)
 						if ((current) % fineN != (fineN - 1) && (current) / fineN != 0 && funcval[current + 1 - fineN + k * (fineN*fineN)] < 3.1 && funcval[current + 1 - fineN + k * (fineN*fineN)] > 0.5) {
 							kx[nPoints] = 0.25*(tempx1[current + 1 - fineN + k * (fineN*fineN)] + tempx2[current + 1 - fineN + k * (fineN*fineN)] + tempx3[current + 1 - fineN + k * (fineN*fineN)] + tempx4[current + 1 - fineN + k * (fineN*fineN)]);
 							ky[nPoints] = 0.25*(tempy1[current + 1 - fineN + k * (fineN*fineN)] + tempy2[current + 1 - fineN + k * (fineN*fineN)] + tempy3[current + 1 - fineN + k * (fineN*fineN)] + tempy4[current + 1 - fineN + k * (fineN*fineN)]);
+							
+							if (funcval[current + fineN + k * (fineN*fineN)] < 3.1 && funcval[current + fineN + k * (fineN*fineN)] >2.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + 1 - fineN + k * (fineN*fineN)] - 1) + tempx2[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + 1 - fineN + k * (fineN*fineN)] - 1) + tempx3[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + 1 - fineN + k * (fineN*fineN)] - 1) + tempx4[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + 1 - fineN + k * (fineN*fineN)] - 1));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + 1 - fineN + k * (fineN*fineN)] - 1) + tempy2[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + 1 - fineN + k * (fineN*fineN)] - 1) + tempy3[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + 1 - fineN + k * (fineN*fineN)] - 1) + tempy4[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + 1 - fineN + k * (fineN*fineN)] - 1));
+
+							}
+							if (funcval[current + fineN + k * (fineN*fineN)] < 1.5 && funcval[current + fineN + k * (fineN*fineN)] >0.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + 1 - fineN + k * (fineN*fineN)]) + tempx2[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + 1 - fineN + k * (fineN*fineN)]) + tempx3[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + 1 - fineN + k * (fineN*fineN)]) + tempx4[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + 1 - fineN + k * (fineN*fineN)]));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + 1 - fineN + k * (fineN*fineN)]) + tempy2[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + 1 - fineN + k * (fineN*fineN)]) + tempy3[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + 1 - fineN + k * (fineN*fineN)]) + tempy4[current + 1 - fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + 1 - fineN + k * (fineN*fineN)]));
+
+							}
+
 							kz[nPoints] = tempz[current + 1 - fineN + k * (fineN*fineN)];
 							funcval[current + 1 - fineN + k * (fineN*fineN)] = 0;
 							nPoints = nPoints + 1;
@@ -645,6 +679,18 @@ FindFermi::FindFermi(Ipp64f * param)
 						if ((current) / fineN != (fineN - 1) && (current) % fineN != 0 && funcval[current - 1 + fineN + k * (fineN*fineN)] < 3.1 && funcval[current + fineN - 1 + k * (fineN*fineN)] > 0.5) {
 							kx[nPoints] = 0.25*(tempx1[current + fineN - 1 + k * (fineN*fineN)] + tempx2[current + fineN - 1 + k * (fineN*fineN)] + tempx3[current + fineN - 1 + k * (fineN*fineN)] + tempx4[current + fineN - 1 + k * (fineN*fineN)]);
 							ky[nPoints] = 0.25*(tempy1[current + fineN - 1 + k * (fineN*fineN)] + tempy2[current + fineN - 1 + k * (fineN*fineN)] + tempy3[current + fineN - 1 + k * (fineN*fineN)] + tempy4[current + fineN - 1 + k * (fineN*fineN)]);
+							
+							if (funcval[current + fineN + k * (fineN*fineN)] < 3.1 && funcval[current + fineN + k * (fineN*fineN)] >2.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 + fineN + k * (fineN*fineN)] - 1) + tempx2[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 + fineN + k * (fineN*fineN)] - 1) + tempx3[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 + fineN + k * (fineN*fineN)] - 1) + tempx4[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 + fineN + k * (fineN*fineN)] - 1));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 + fineN + k * (fineN*fineN)] - 1) + tempy2[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 + fineN + k * (fineN*fineN)] - 1) + tempy3[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 + fineN + k * (fineN*fineN)] - 1) + tempy4[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 + fineN + k * (fineN*fineN)] - 1));
+
+							}
+							if (funcval[current + fineN + k * (fineN*fineN)] < 1.5 && funcval[current + fineN + k * (fineN*fineN)] >0.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 + fineN + k * (fineN*fineN)]) + tempx2[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 + fineN + k * (fineN*fineN)]) + tempx3[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 + fineN + k * (fineN*fineN)]) + tempx4[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 + fineN + k * (fineN*fineN)]));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint + current - 1 + fineN + k * (fineN*fineN)]) + tempy2[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current - 1 + fineN + k * (fineN*fineN)]) + tempy3[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current - 1 + fineN + k * (fineN*fineN)]) + tempy4[current - 1 + fineN + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current - 1 + fineN + k * (fineN*fineN)]));
+
+							}
+
 							kz[nPoints] = tempz[current + fineN - 1 + k * (fineN*fineN)];
 							funcval[current + fineN - 1 + k * (fineN*fineN)] = 0;
 							nPoints = nPoints + 1;
@@ -655,6 +701,18 @@ FindFermi::FindFermi(Ipp64f * param)
 						if ((current) / fineN != (fineN - 1) && (current) % fineN != (fineN - 1) && funcval[current + fineN + 1 + k * (fineN*fineN)] < 3.1 && funcval[current + fineN + 1 + k * (fineN*fineN)] > 0.5) {
 							kx[nPoints] = 0.25*(tempx1[current + fineN + 1 + k * (fineN*fineN)] + tempx2[current + fineN + 1 + k * (fineN*fineN)] + tempx3[current + fineN + 1 + k * (fineN*fineN)] + tempx4[current + fineN + 1 + k * (fineN*fineN)]);
 							ky[nPoints] = 0.25*(tempy1[current + fineN + 1 + k * (fineN*fineN)] + tempy2[current + fineN + 1 + k * (fineN*fineN)] + tempy3[current + fineN + 1 + k * (fineN*fineN)] + tempy4[current + fineN + 1 + k * (fineN*fineN)]);
+							
+							if (funcval[current + fineN + k * (fineN*fineN)] < 3.1 && funcval[current + fineN + k * (fineN*fineN)] >2.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + fineN + 1 + k * (fineN*fineN)] - 1) + tempx2[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + fineN + 1 + k * (fineN*fineN)] - 1) + tempx3[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + fineN + 1 + k * (fineN*fineN)] - 1) + tempx4[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + fineN + 1 + k * (fineN*fineN)] - 1));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + fineN + 1 + k * (fineN*fineN)] - 1) + tempy2[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + fineN + 1 + k * (fineN*fineN)] - 1) + tempy3[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + fineN + 1 + k * (fineN*fineN)] - 1) + tempy4[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + fineN + 1 + k * (fineN*fineN)] - 1));
+
+							}
+							if (funcval[current + fineN + k * (fineN*fineN)] < 1.5 && funcval[current + fineN + k * (fineN*fineN)] >0.5) {
+								kx[nPoints] = 0.5*(kx[nPoints] + tempx1[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + fineN + 1 + k * (fineN*fineN)]) + tempx2[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + fineN + 1 + k * (fineN*fineN)]) + tempx3[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + fineN + 1 + k * (fineN*fineN)]) + tempx4[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + fineN + 1 + k * (fineN*fineN)]));
+								ky[nPoints] = 0.5*(ky[nPoints] + tempy1[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint + current + fineN + 1 + k * (fineN*fineN)]) + tempy2[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 2 + current + fineN + 1 + k * (fineN*fineN)]) + tempy3[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 3 + current + fineN + 1 + k * (fineN*fineN)]) + tempy4[current + fineN + 1 + k * (fineN*fineN)] * abs(funcval[nfinepoint * 4 + current + fineN + 1 + k * (fineN*fineN)]));
+
+							}
+
 							kz[nPoints] = tempz[current + fineN + 1 + k * (fineN*fineN)];
 							funcval[current + fineN + 1 + k * (fineN*fineN)] = 0;
 							nPoints = nPoints + 1;

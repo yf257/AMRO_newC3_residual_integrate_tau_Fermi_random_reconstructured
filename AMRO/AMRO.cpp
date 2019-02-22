@@ -42,11 +42,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	//Ipp64f thetas[1] = { 1.48353 };
 
 	
-	const int numthetas = 21;
+	const int numthetas = 16;
+	
+	Ipp64f thetas[numthetas] = { 0., 0.116355, 0.232711, 0.349066, 0.465421, 0.581776, 0.698132, \
+0.814487, 0.930842, 1.0472, 1.16355, 1.27991, 1.39626, 1.51262, \
+1.62897, 1.74533 };
+
 	const int phinum = 4;
-	Ipp64f thetas[numthetas] = { 0., 0.0872665, 0.174533, 0.261799, 0.349066, 0.436332, 0.523599, \
-0.610865, 0.698132, 0.785398, 0.872665, 0.959931, 1.0472, 1.13446, \
-1.22173, 1.309, 1.39626, 1.48353, 1.5708, 1.65806, 1.74533 };
 	Ipp64f phi[phinum] = { 0, 0.261799 , 0.523599, 0.785398 };
 	Ipp64f *condout = new Ipp64f[numthetas*phinum];
 	//Ipp64f*condout = new Ipp64f[46];
@@ -402,11 +404,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	fout << endl;*/
 	fout.close();
-	//fout.open("Fermitraject.dat");
-	//fout.precision(15);
-	//cout << nPoints << endl;
 	/*
-	for (int j = 0; j < nPoints; ++j) {
+	fout.open("Fermitraject.dat");
+	fout.precision(15);
+	//cout << nPoints << endl;
+	
+	for (int j = 0; j < 10; ++j) {
 		fout.open("Fermitraject"+std::to_string(j)+".dat");
 		fout.precision(15);
 		for (int i = 1; i < steps; i++) {
